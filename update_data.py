@@ -28,7 +28,8 @@ NOW = datetime.now(KST)
 SIDO = "강원특별자치도"
 CITY = "동해시"
 ER_CITIES = ["동해시", "삼척시", "강릉시"]      # 응급실은 인근 시까지 함께 표시
-DAILY_EVERY_HOURS = 20                         # 약국·병의원은 20시간 지나면 새로 받음
+HOURS_EVERY_MIN = 60                           # 약국·병의원 운영시간: 60분마다 새로 받음
+DAILY_EVERY_HOURS = 20                         # 진료과목·응급실 목록: 하루 1회(20시간 경과 시)
 
 API = "https://apis.data.go.kr/B552657/"
 PHARM = API + "ErmctInsttInfoInqireService/getParmacyListInfoInqire"
@@ -121,12 +122,27 @@ def hours(i):
     return t
 
 
+def age(name):
+    doc = read(name)
+    if not doc or not doc.get("items"):
+        return None
+    try:
+        return NOW - datetime.strptime(doc["updated"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
+    except Exception:
+        return None
+
+
+def due_hours(name):
+    a = age(name)
+    return a is None or a >= timedelta(minutes=HOURS_EVERY_MIN - 5) or "--daily" in sys.argv
+
+
 def due(name):
     doc = read(name)
     if not doc or not doc.get("items"):
         return True
     try:
-        last = datetime.strptime(doc["updated"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
+        last = datetime.strptime(doc.get("dept_updated", doc["updated"]), "%Y-%m-%d %H:%M").replace(tzinfo=KST)
     except Exception:
         return True
     return NOW - last >= timedelta(hours=DAILY_EVERY_HOURS) or "--daily" in sys.argv
@@ -158,7 +174,14 @@ def update_hospital():
     if not items:
         raise RuntimeError("병·의원 0건")
     depts = {}
-    for code, name in DEPTS:
+    old = read("hospital.json") or {}
+    if not due("hospital.json") and old.get("items"):
+        # 진료과목은 하루 1회만 새로 조회 (그 사이에는 이전 결과 재사용)
+        depts = {h.get("id"): h.get("d", []) for h in old["items"]}
+        prev_day = old.get("dept_updated", old.get("updated", ""))
+    else:
+        prev_day = None
+    for code, name in (DEPTS if prev_day is None else []):
         try:
             for i in call_all(HOSP, {"Q0": sido, "Q1": CITY, "QD": code}):
                 depts.setdefault(i.get("hpid"), []).append(name)
@@ -177,7 +200,7 @@ def update_hospital():
             p["er"] = 1
         out.append(coord(i, p))
     out.sort(key=lambda p: p["name"])
-    write("hospital.json", {"updated": stamp(), "items": out})
+    write("hospital.json", {"updated": stamp(), "dept_updated": prev_day or stamp(), "items": out})
     log(f"병·의원 {len(out)}곳")
 
 
@@ -225,9 +248,9 @@ def main():
     ok, fail = 0, 0
     daily = due("hospital.json") or due("pharmacy.json")
     jobs = [("응급실", lambda: update_er(daily))]
-    if due("pharmacy.json"):
+    if due_hours("pharmacy.json"):
         jobs.append(("약국", update_pharmacy))
-    if due("hospital.json"):
+    if due_hours("hospital.json"):
         jobs.append(("병·의원", update_hospital))
     for name, fn in jobs:
         try:

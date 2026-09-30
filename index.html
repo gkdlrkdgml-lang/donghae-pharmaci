@@ -12,7 +12,7 @@
   --bg:#eef1f4; --panel:#ffffff; --ink:#0d141c; --muted:#3b4754; --line:#c9d1da;
   --accent:#0b5cad; --open:#12805c; --soon:#b86e00; --closed:#8a94a0; --danger:#c62f2f;
   --bar:#e3e8ee; --barfill:#9fd3bd; --now:#d23b2f; --mapbg:#e6ecf1;
-  --c-ph:#15965e; --c-hp:#1f63d1; --c-er:#d42a2a; --c-off:#98a2ad;
+  --c-duty:#7a3fc4; --c-ph:#15965e; --c-hp:#1f63d1; --c-er:#d42a2a; --c-off:#98a2ad;
   --f-body:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   --f-mono:ui-monospace,"SFMono-Regular",Consolas,"D2Coding",monospace;
 }
@@ -29,6 +29,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);fo
 [hidden]{display:none!important}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wrap{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;gap:14px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
 header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
 .eyebrow{font-size:16px;letter-spacing:.02em;color:var(--accent);font-weight:800}
 h1{margin:4px 0 0;font-size:30px;font-weight:800;line-height:1.25;text-wrap:balance}
@@ -38,6 +39,7 @@ h1 .k-ph{color:var(--c-ph)}h1 .k-hp{color:var(--c-hp)}h1 .k-er{color:var(--c-er)
 .clock{text-align:right}
 .clock .t{font-family:var(--f-mono);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
 .clock .d{font-size:14px;font-weight:700;color:var(--muted)}
+@media (max-width:480px){.clock{text-align:left}h1{font-size:23px}}
 .notice{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;color:var(--muted);font-weight:600}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
 .tab{font:inherit;font-size:17px;font-weight:800;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
@@ -86,6 +88,7 @@ button.stat{cursor:pointer}
 .name{font-weight:800;font-size:17px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .name svg{width:18px;height:18px;color:var(--muted);flex:none}
 .pill{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;color:var(--c);border:1px solid var(--c);white-space:nowrap}
+.tag.ov{color:#fff;font-weight:800}.tag.duty{background:var(--c-duty);border-color:var(--c-duty)}.tag.off{background:var(--c-off);border-color:var(--c-off)}
 .tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-weight:500}
 .meta{font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
 .tel{font-family:var(--f-mono);color:var(--ink);background:none;border:0;padding:0;cursor:pointer;font-size:13px}
@@ -131,9 +134,11 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
 <body>
 <div class="wrap">
   <header>
-    <div>
+    <div class="brand">
+      <div>
       <div class="eyebrow">동해시 실시간 의료기관 안내</div>
       <h1>지금 문 연 <span class="k k-ph">약국</span><span class="sep">·</span><span class="k k-hp">병원</span><span class="sep">·</span><span class="k k-er">응급실</span></h1>
+      </div>
     </div>
     <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div></div>
   </header>
@@ -181,7 +186,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
 
   <footer>
     운영시간·가용병상은 각 기관이 국립중앙의료원(E-Gen)에 입력한 정보로, 실제와 다를 수 있습니다. 방문 전 반드시 전화로 확인하세요.<br>
-    응급실 가용병상은 10분 간격으로 갱신되며 병원이 입력한 시각 기준입니다. 응급 상황에서는 119에 먼저 신고하세요.<br>
+    약국·병의원 운영시간은 1시간, 응급실 가용병상은 10분 간격으로 갱신되며 병원이 입력한 시각 기준입니다. 응급 상황에서는 119에 먼저 신고하세요.<br>
     공휴일 당번약국: 휴일지킴이약국(www.pharm114.or.kr) · 출처: 국립중앙의료원 약국·병의원·응급의료기관 정보 조회 서비스(공공데이터포털) · 지도: 국토교통부 브이월드
   </footer>
 </div>
@@ -220,14 +225,22 @@ const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+Stri
 let simTime=null;const now=()=>simTime?new Date(simTime):new Date();
 const dayKey=(d,force)=>force||HOLIDAYS.has(ymd(d))?8:(d.getDay()||7);
 function span(p,k){const t=p.t&&p.t[k];if(!t||!t[0]||!t[1])return null;let o=toMin(t[0]),c=toMin(t[1]);if(c<=o)c+=1440;return[o,c]}
+// ===== 당번·임시휴무 (duty.json, GitHub에서 직접 편집) =====
+let OV=[];
+function ovFor(p,d){if(!OV.length||p._t==="er")return null;const ds=ymd(d);
+  return OV.find(o=>o&&o.name===p.name&&(!o.addr||String(p.addr||"").includes(o.addr))&&
+    ((o.date&&o.date===ds)||(o.from&&o.from<=ds&&ds<=(o.to||o.from))))||null}
 function status(p,d){
-  const k=dayKey(d,$("#hol").checked),m=d.getHours()*60+d.getMinutes(),today=span(p,k);
+  const ov=ovFor(p,d),k=dayKey(d,$("#hol").checked),m=d.getHours()*60+d.getMinutes();
+  if(ov&&ov.type==="휴무")return{st:"closed",today:null,open:null,k,m,ov};
+  if(ov&&ov.type==="당번"&&ov.open&&ov.close)p=Object.assign({},p,{t:Object.assign({},p.t,{[k]:[String(ov.open).replace(":",""),String(ov.close).replace(":","")]})});
+  const today=span(p,k);
   const y=new Date(d);y.setDate(y.getDate()-1);const prev=span(p,dayKey(y,false));
   let open=null;
   if(prev&&prev[1]>1440&&m<prev[1]-1440)open=[prev[0]-1440,prev[1]-1440];
   if(today&&m>=today[0]&&m<today[1])open=today;
   const st=!Object.keys(p.t||{}).length?"unk":open?(open[1]-m<=SOON?"soon":"open"):"closed";
-  return{st,today,open,k,m};
+  return{st,today,open,k,m,ov};
 }
 const DAYN={1:"월",2:"화",3:"수",4:"목",5:"금",6:"토",7:"일",8:"공휴일"};
 const COL={open:"var(--open)",soon:"var(--soon)",closed:"var(--closed)",unk:"var(--closed)",ok:"var(--open)",low:"var(--soon)",none:"var(--danger)"};
@@ -244,7 +257,8 @@ const DATA={ph:[],hp:[],er:[]},UPD={};
 const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
-async function loadAll(){await Promise.all(["ph","hp","er"].map(load));initFilters();render()}
+async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[]}}catch(e){}}
+async function loadAll(){await Promise.all(["ph","hp","er"].map(load).concat(loadOV()));initFilters();render()}
 async function loadER(){await load("er");render()}
 
 // ===== 상태 =====
@@ -306,7 +320,8 @@ function render(){
 
   // 목록
   const order={open:0,soon:1,closed:2,unk:3,ok:0,low:1,none:2};
-  const vis=visible(tab,d).sort((a,b)=>isER?0:order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko"));
+  const duty=r=>r.s.ov&&r.s.ov.type==="당번"?0:1;
+  const vis=visible(tab,d).sort((a,b)=>isER?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko"));
   $("#list").innerHTML=vis.length?vis.map(r=>isER?erRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
 
   drawMap(d);showInfo(d);
@@ -315,7 +330,7 @@ function render(){
 function hoursHtml(r,d){
   const s=r.s,p=r.p;let segs="",txt;
   if(s.today){const[o,c]=s.today;segs+=`<i style="left:${o/14.4}%;width:${(Math.min(c,1440)-o)/14.4}%"></i>`;txt=(o===0&&c>=1440)?"24시간":`${fmt(o)} – ${fmt(c)}${c>1440?" (익일)":""}`}
-  else txt=Object.keys(p.t||{}).length?"오늘 휴무":"운영시간 미등록";
+  else txt=s.ov&&s.ov.type==="휴무"?"임시휴무":Object.keys(p.t||{}).length?"오늘 휴무":"운영시간 미등록";
   if(s.open&&s.open[0]<0)segs+=`<i style="left:0;width:${s.open[1]/14.4}%"></i>`;
   let sub="";if(s.today&&s.today[0]===0&&s.today[1]>=1440)sub="";else if(s.st==="open")sub=`${fmt(s.open[1])} 마감`;else if(s.st==="soon")sub=`${s.open[1]-s.m}분 후 마감`;else if(s.today&&s.m<s.today[0])sub=`${fmt(s.today[0])} 시작`;
   const nowPct=(d.getHours()*60+d.getMinutes())/14.4;
@@ -323,13 +338,15 @@ function hoursHtml(r,d){
 }
 function row(r,d){
   const p=r.p,t=r.t,ic=t==="ph"?IC.ph:IC[hpIcon(p)];
-  const tags=t==="hp"?`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"";
+  const ov=r.s.ov,ovTag=ov?`<span class="tag ov ${ov.type==="당번"?"duty":"off"}">${ov.type==="당번"?"오늘 당번":"임시휴무"}</span>`:"";
+  const tags=ovTag+(t==="hp"?`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
+  const ovMemo=ov&&ov.memo?`<div class="depts" style="color:var(--c-duty)">${esc(ov.memo)}</div>`:"";
   const dep=t==="hp"&&p.d&&p.d.length?`<div class="depts">진료과목: ${esc(p.d.join(", "))}</div>`:"";
   const inf=p.inf?`<div class="depts">${esc(p.inf)}</div>`:"";
   return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:${COL[r.s.st]}">
     <div class="name">${ic}${esc(p.name)} <span class="pill">${LAB[t][r.s.st]}</span>${tags}</div>
     <div class="meta"><span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
-    ${hoursHtml(r,d)}${dep}${inf}</article>`;
+    ${hoursHtml(r,d)}${ovMemo}${dep}${inf}</article>`;
 }
 function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
 function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
@@ -373,8 +390,8 @@ function drawMap(d){
     visible(t,d).forEach(r=>{const p=r.p;if(!p.lat||!p.lon)return;
       const sel=p._k===selKey,off=t!=="er"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
       const ic=t==="ph"?IC.ph:t==="er"?IC.er:IC[hpIcon(p)];
-      const badge=t==="er"?erNum(p.b&&p.b.hvec):null;
-      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bcol,off,t!=="er"&&r.s.st==="soon"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
+      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?erNum(p.b&&p.b.hvec):isDuty?"당번":null;const bc=isDuty?tok("--c-duty"):bcol;
+      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
         zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);
     });
@@ -405,8 +422,9 @@ $("#zfit").onclick=()=>{selKey=null;fitted=false;render()};
 
 render();loadAll();
 setInterval(()=>{if(!simTime)render()},60000);   // 1분마다 영업 상태 재계산
+setInterval(()=>{loadOV().then(render)},10*60000);
 setInterval(loadER,5*60000);                      // 5분마다 응급실 병상 재조회
-setInterval(loadAll,60*60000);                    // 1시간마다 전체 재조회
+setInterval(loadAll,15*60000);                    // 15분마다 약국·병의원 재조회(서버는 1시간마다 갱신)
 </script>
 </body>
 </html>
