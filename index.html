@@ -12,6 +12,7 @@
   --bg:#eef1f4; --panel:#ffffff; --ink:#15202b; --muted:#5b6b7a; --line:#d5dce3;
   --accent:#0b5cad; --open:#12805c; --soon:#b86e00; --closed:#8a94a0; --danger:#c62f2f;
   --bar:#e3e8ee; --barfill:#9fd3bd; --now:#d23b2f; --mapbg:#e6ecf1;
+  --c-ph:#15965e; --c-hp:#1f63d1; --c-er:#d42a2a; --c-off:#98a2ad;
   --f-body:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   --f-mono:ui-monospace,"SFMono-Regular",Consolas,"D2Coding",monospace;
 }
@@ -37,7 +38,9 @@ h1{margin:2px 0 0;font-size:24px;font-weight:700;text-wrap:balance}
 .notice{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--muted)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
 .tab{font:inherit;font-size:15px;font-weight:600;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
-.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--tc)}
+.tab svg{color:var(--tc)}
+.tab[data-t=ph],.chip[data-l=ph]{--tc:var(--c-ph)}.tab[data-t=hp],.chip[data-l=hp]{--tc:var(--c-hp)}.tab[data-t=er],.chip[data-l=er]{--tc:var(--c-er)}
 .tab svg{width:18px;height:18px}
 .tab .c{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:500}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
@@ -60,7 +63,7 @@ button.stat{cursor:pointer}
 .maphead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px}
 .layers{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:5px}
-.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);font-weight:600}
+.chip[aria-pressed="true"]{border-color:var(--tc);background:var(--tc);color:#fff;font-weight:600}
 .chip svg{width:14px;height:14px}
 #map{height:clamp(360px,64vh,680px);background:var(--mapbg)}
 .mapmsg{display:grid;place-items:center;height:100%;color:var(--muted);font-size:14px;padding:20px;text-align:center}
@@ -102,6 +105,8 @@ footer{font-size:12px;color:var(--muted);line-height:1.6}
 /* 지도 핀 */
 .pin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .pin svg{transform:rotate(45deg);width:19px;height:19px;color:#fff}
+.pin.off{opacity:.9}
+.sdot{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#f0a020;border:2px solid #fff}
 .pin.sel{border-color:#15202b;border-width:3px;transform:rotate(-45deg) scale(1.2)}
 .pinwrap{position:relative;width:34px;height:34px}
 .badge{position:absolute;top:-8px;right:-12px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:#fff;color:#15202b;border:2px solid currentColor;font:700 13px/18px var(--f-mono);text-align:center}
@@ -276,8 +281,8 @@ function render(){
     `<button class="stat" data-f="${f}" aria-pressed="${filter===f}"><span class="n">${n}</span><span class="l"><span class="dot" style="background:${col}"></span>${l}</span></button>`).join("");
 
   // 범례
-  $("#legend").innerHTML=isER?`<span><i class="dot" style="background:var(--open)"></i>가용 ${ER_WARN+1}+</span><span><i class="dot" style="background:var(--soon)"></i>1~${ER_WARN}</span><span><i class="dot" style="background:var(--danger)"></i>0 이하(포화)</span><span>핀 숫자 = 응급실 가용병상</span>`
-    :`<span><i class="dot" style="background:var(--open)"></i>${LAB[tab].open}</span><span><i class="dot" style="background:var(--soon)"></i>마감임박</span><span><i class="dot" style="background:var(--closed)"></i>종료</span>`;
+  const typeLeg=`<span><i class="dot" style="background:var(--c-ph)"></i>약국</span><span><i class="dot" style="background:var(--c-hp)"></i>병·의원</span><span><i class="dot" style="background:var(--c-er)"></i>응급실</span><span><i class="dot" style="background:var(--c-off)"></i>운영 종료</span><span><i class="dot" style="background:#f0a020"></i>핀 위 주황 점 = 마감임박</span>`;
+  $("#legend").innerHTML=typeLeg+" "+`<span>응급실 핀 숫자 = 가용병상 (숫자 색: 초록 여유 · 주황 ${ER_WARN} 이하 · 빨강 포화)</span>`;
 
   // 목록
   const order={open:0,soon:1,closed:2,unk:3,ok:0,low:1,none:2};
@@ -335,7 +340,7 @@ function showInfo(d){
 
 // ===== 지도 =====
 let lmap=null,lgroup=null,fitted=false;
-function pinHtml(ic,color,sel,badge){return `<div class="pinwrap"><div class="pin${sel?" sel":""}" style="background:${color}">${ic}</div>${badge!=null?`<div class="badge" style="color:${color}">${badge}</div>`:""}</div>`}
+function pinHtml(ic,color,sel,badge,bcol,off,soon){return `<div class="pinwrap"><div class="pin${sel?" sel":""}${off?" off":""}" style="background:${color}">${ic}</div>${badge!=null?`<div class="badge" style="color:${bcol}">${badge}</div>`:""}${soon?`<div class="sdot" title="마감임박"></div>`:""}</div>`}
 function drawMap(d){
   if(!window.L){$("#map").innerHTML=`<div class="mapmsg">지도를 불러오지 못했습니다. 인터넷 연결을 확인하세요.</div>`;return}
   if(!lmap){lmap=L.map("map",{zoomControl:true});L.tileLayer(MAP_TILES,{minZoom:6,maxZoom:19,attribution:MAP_ATTR}).addTo(lmap);lgroup=L.layerGroup().addTo(lmap);lmap.setView([37.52,129.11],13)}
@@ -344,11 +349,11 @@ function drawMap(d){
   ["hp","ph","er"].forEach(t=>{
     if(!(layers[t]||t===tab))return;
     visible(t,d).forEach(r=>{const p=r.p;if(!p.lat||!p.lon)return;
-      const sel=p._k===selKey,color=tok(CV[r.s.st])||"#888";
+      const sel=p._k===selKey,off=t!=="er"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
       const ic=t==="ph"?IC.ph:t==="er"?IC.er:IC[hpIcon(p)];
       const badge=t==="er"?erNum(p.b&&p.b.hvec):null;
-      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
-        zIndexOffset:sel?1000:t==="er"?500:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:LAB[t][r.s.st]}`});
+      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bcol,off,t!=="er"&&r.s.st==="soon"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
+        zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);
     });
   });
