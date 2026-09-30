@@ -92,7 +92,7 @@ button.stat{cursor:pointer}
 .bar b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--now)}
 .ticks{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
 .depts{font-size:13px;font-weight:600;color:var(--muted)}
-.beds{display:grid;grid-template-columns:minmax(110px,auto) repeat(3,minmax(0,1fr));gap:8px 16px;align-items:end}
+.beds{display:grid;grid-template-columns:minmax(110px,auto) repeat(4,minmax(0,1fr));gap:8px 16px;align-items:end}
 @media (max-width:480px){.beds{grid-template-columns:repeat(3,minmax(0,1fr))}.beds .big{grid-column:1/-1}}
 .bed{display:grid;gap:0}
 .bed .v{font-family:var(--f-mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -102,6 +102,11 @@ button.stat{cursor:pointer}
 .equip{display:flex;flex-wrap:wrap;gap:4px}
 .eq{font-size:12px;border-radius:4px;padding:0 6px;border:1px solid var(--line);color:var(--muted)}
 .eq.y{color:var(--open);border-color:var(--open)}
+.kid{font-size:13px;font-weight:800;border-radius:999px;padding:1px 9px;background:var(--c-hp);color:#fff;white-space:nowrap}
+.kid.no{background:none;color:var(--muted);border:1px solid var(--line);font-weight:600}
+.quick{font:inherit;font-size:14px;font-weight:800;border:2px solid var(--c-hp);color:var(--c-hp);background:var(--panel);border-radius:8px;padding:6px 12px;cursor:pointer}
+.quick[aria-pressed="true"]{background:var(--c-hp);color:#fff}
+.kidnote{font-size:13px;font-weight:600;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
 .warn{font-size:12px;color:var(--danger);font-weight:600}
 .empty{padding:30px;text-align:center;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px}
 footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
@@ -140,6 +145,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
   <div class="tools" id="tools">
     <input type="search" id="q" placeholder="이름·주소 검색">
     <select id="dong" aria-label="행정동"></select>
+    <button class="quick" id="kids" aria-pressed="false">지금 진료하는 소아청소년과</button>
     <select id="div" aria-label="종별"></select>
     <select id="dept" aria-label="진료과목"></select>
     <label><input type="checkbox" id="hol"> 공휴일로 판정</label>
@@ -147,6 +153,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
     <button class="btn" id="now">현재시각</button>
   </div>
 
+  <div class="kidnote" id="kidnote" hidden>밤·휴일에 아이가 아플 때: 가벼운 증상은 병·의원 탭의 <b>지금 진료하는 소아청소년과</b>를, 응급 상황은 아래 응급실의 <b>소아 응급병상</b>을 확인하세요. 소아 전용병상 표시가 없어도 응급실은 소아 환자를 진료하지만, 소아 전문 진료 가능 여부는 전화로 먼저 확인하세요.</div>
   <div class="main">
     <section class="mapwrap" aria-label="위치 지도">
       <div class="maphead">
@@ -269,7 +276,8 @@ function render(){
   // 탭별 필터 표시
   const isER=tab==="er";
   $("#dong").hidden=isER;$("#hol").parentElement.hidden=isER;$("#sim").parentElement.hidden=isER;$("#now").hidden=isER;
-  $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";
+  $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";$("#kidnote").hidden=tab!=="er";
+  $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
   const dsel=$("#dong"),dcur=dsel.value,dongs=[...new Set(DATA[tab].map(p=>dongOf(p.addr)))].sort();
   dsel.innerHTML=`<option value="">전체 동</option>`+dongs.map(x=>`<option${x===dcur?" selected":""}>${esc(x)}</option>`).join("");
 
@@ -314,18 +322,20 @@ function row(r,d){
     <div class="meta"><span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
     ${hoursHtml(r,d)}${dep}${inf}</article>`;
 }
+function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
 function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
 function erRow(r){
   const h=r.p,b=h.b||{},col=COL[r.s.st];
   const over=b.hvec<0?`<div class="warn">과밀 +${-b.hvec} (병상보다 환자 많음)</div>`:"";
-  const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
+  const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hv10","소아 인공호흡기"],["hvincuayn","인큐베이터"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
   return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:${col}">
-    <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
+    <div class="name">${IC.er}${esc(h.name)} ${kidTag(b)}<span class="tag">${esc(h.city||"")}</span>${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     <div class="beds">
       <div class="bed big"><span class="v">${erNum(b.hvec)}${b.hvs01!=null?` <small>/ ${b.hvs01}</small>`:""}</span><span class="k">응급실 가용</span></div>
       <div class="bed"><span class="v">${erNum(b.hvicc)}</span><span class="k">중환자실</span></div>
       <div class="bed"><span class="v">${erNum(b.hvgc)}</span><span class="k">입원실</span></div>
       <div class="bed"><span class="v">${erNum(b.hvoc)}</span><span class="k">수술실</span></div>
+      <div class="bed"><span class="v">${b.hv28!=null?erNum(b.hv28):"–"}</span><span class="k">소아 응급</span></div>
     </div>${over}
     ${eq?`<div class="equip">${eq}</div>`:""}
     <div class="meta"><span>병원 입력 ${esc(erTime(b.hvidate))}</span>${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
@@ -336,7 +346,7 @@ function findSel(d){if(!selKey)return null;const t=selKey.slice(0,2);return rows
 function showInfo(d){
   const box=$("#info"),r=findSel(d);if(!r){box.hidden=true;return}
   box.hidden=false;const p=r.p;
-  if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
+  if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div><div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   const s=r.s,ht=s.today?(s.today[0]===0&&s.today[1]>=1440?`${DAYN[s.k]} 24시간`:`${DAYN[s.k]} ${fmt(s.today[0])}–${fmt(s.today[1])}`):"오늘 휴무/미등록";
   box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}</div><div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
 }
@@ -381,6 +391,7 @@ document.addEventListener("click",e=>{
 ["q","dong","div","dept","hol"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",()=>{fitted=false;render()}));
 $("#sim").onchange=e=>{simTime=e.target.value?new Date(e.target.value).getTime():null;render()};
 $("#now").onclick=()=>{simTime=null;$("#sim").value="";render()};
+$("#kids").onclick=()=>{const on=$("#kids").getAttribute("aria-pressed")==="true";$("#dept").value=on?"":"소아청소년과";filter=on?"all":"open";fitted=false;render()};
 $("#zfit").onclick=()=>{selKey=null;fitted=false;render()};
 
 render();loadAll();

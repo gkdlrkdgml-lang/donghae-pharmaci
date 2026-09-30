@@ -182,7 +182,8 @@ def update_hospital():
 
 
 BED_FIELDS = ["hvec", "hvs01", "hvoc", "hvicc", "hvgc", "hvidate",
-              "hvctayn", "hvmriayn", "hvangioayn", "hvventiayn", "hvamyn"]
+              "hvctayn", "hvmriayn", "hvangioayn", "hvventiayn", "hvamyn",
+              "hv28", "hvncc", "hv10", "hvincuayn"]   # 소아 응급병상, 신생아중환자실, 소아 인공호흡기, 인큐베이터
 
 
 def update_er(refresh_base):
@@ -204,7 +205,7 @@ def update_er(refresh_base):
     for hpid, (b, city, raw) in beds.items():
         h = dict(base.get(hpid) or {"id": hpid, "name": raw.get("dutyName", ""), "city": city,
                                     "tel": raw.get("dutyTel3", "")})
-        for k in ("hvec", "hvs01", "hvoc", "hvicc", "hvgc"):
+        for k in ("hvec", "hvs01", "hvoc", "hvicc", "hvgc", "hv28", "hvncc"):
             if k in b:
                 try:
                     b[k] = int(b[k])
