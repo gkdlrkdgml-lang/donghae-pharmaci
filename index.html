@@ -9,7 +9,7 @@
 <style>
 /* 상단 요약 → 탭(약국/병·의원/응급실) → 지도 + 목록 */
 :root{
-  --bg:#eef1f4; --panel:#ffffff; --ink:#15202b; --muted:#5b6b7a; --line:#d5dce3;
+  --bg:#eef1f4; --panel:#ffffff; --ink:#0d141c; --muted:#3b4754; --line:#c9d1da;
   --accent:#0b5cad; --open:#12805c; --soon:#b86e00; --closed:#8a94a0; --danger:#c62f2f;
   --bar:#e3e8ee; --barfill:#9fd3bd; --now:#d23b2f; --mapbg:#e6ecf1;
   --c-ph:#15965e; --c-hp:#1f63d1; --c-er:#d42a2a; --c-off:#98a2ad;
@@ -17,27 +17,30 @@
   --f-mono:ui-monospace,"SFMono-Regular",Consolas,"D2Coding",monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0f1720; --panel:#17212c; --ink:#e4eaf0; --muted:#94a3b3; --line:#2a3845;
+  --bg:#0f1720; --panel:#17212c; --ink:#f3f6f9; --muted:#b8c4d0; --line:#324252;
   --accent:#5aa2ea; --open:#3cc58f; --soon:#f0a53a; --closed:#6f7c89; --danger:#ff6b5e;
   --bar:#223040; --barfill:#1f6b52; --now:#ff6b5e; --mapbg:#121c26; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0f1720; --panel:#17212c; --ink:#e4eaf0; --muted:#94a3b3; --line:#2a3845;
+  --bg:#0f1720; --panel:#17212c; --ink:#f3f6f9; --muted:#b8c4d0; --line:#324252;
   --accent:#5aa2ea; --open:#3cc58f; --soon:#f0a53a; --closed:#6f7c89; --danger:#ff6b5e;
   --bar:#223040; --barfill:#1f6b52; --now:#ff6b5e; --mapbg:#121c26; color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;font-weight:500}
 [hidden]{display:none!important}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wrap{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;gap:14px}
 header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
-.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:500}
-h1{margin:2px 0 0;font-size:24px;font-weight:700;text-wrap:balance}
+.eyebrow{font-size:16px;letter-spacing:.02em;color:var(--accent);font-weight:800}
+h1{margin:4px 0 0;font-size:30px;font-weight:800;line-height:1.25;text-wrap:balance}
+h1 .k{white-space:nowrap}h1 .sep{color:var(--muted);font-weight:700;margin:0 .3em}
+h1 .k-ph{color:var(--c-ph)}h1 .k-hp{color:var(--c-hp)}h1 .k-er{color:var(--c-er)}
+@media (max-width:480px){h1{font-size:24px}.clock{text-align:left}}
 .clock{text-align:right}
 .clock .t{font-family:var(--f-mono);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
-.clock .d{font-size:13px;color:var(--muted)}
-.notice{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--muted)}
+.clock .d{font-size:14px;font-weight:700;color:var(--muted)}
+.notice{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;color:var(--muted);font-weight:600}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
-.tab{font:inherit;font-size:15px;font-weight:600;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
+.tab{font:inherit;font-size:17px;font-weight:800;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--tc)}
 .tab svg{color:var(--tc)}
 .tab[data-t=ph],.chip[data-l=ph]{--tc:var(--c-ph)}.tab[data-t=hp],.chip[data-l=hp]{--tc:var(--c-hp)}.tab[data-t=er],.chip[data-l=er]{--tc:var(--c-er)}
@@ -49,12 +52,12 @@ h1{margin:2px 0 0;font-size:24px;font-weight:700;text-wrap:balance}
 button.stat{cursor:pointer}
 .stat[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:-2px}
 .stat .n{font-family:var(--f-mono);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
-.stat .l{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.stat .l{font-size:14px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tools input,.tools select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);min-width:0}
 .tools input[type=search]{flex:1 1 180px}
-.tools label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.tools label{font-size:14px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
 .btn{font:inherit;font-size:13px;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
 .btn:hover{border-color:var(--accent)}
 .main{display:grid;gap:12px;align-items:start}
@@ -69,31 +72,31 @@ button.stat{cursor:pointer}
 .mapmsg{display:grid;place-items:center;height:100%;color:var(--muted);font-size:14px;padding:20px;text-align:center}
 .info{padding:10px 12px;border-top:1px solid var(--line);display:grid;gap:3px;font-size:13px}
 .info .nm{font-weight:700;font-size:15px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 12px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
 .legend span{display:flex;align-items:center;gap:5px}
 .list{display:grid;gap:8px;min-width:0}
 .row{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--closed));border-radius:6px;padding:12px 14px;display:grid;gap:6px;cursor:pointer}
 .row.sel{outline:2px solid var(--ink);outline-offset:-2px}
-.name{font-weight:700;font-size:16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.name{font-weight:800;font-size:17px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .name svg{width:18px;height:18px;color:var(--muted);flex:none}
 .pill{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;color:var(--c);border:1px solid var(--c);white-space:nowrap}
 .tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-weight:500}
-.meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+.meta{font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
 .tel{font-family:var(--f-mono);color:var(--ink);background:none;border:0;padding:0;cursor:pointer;font-size:13px}
 .nlink{color:var(--accent);font-size:13px;text-decoration:none;font-weight:500}
 .nlink:hover,.tel:hover{text-decoration:underline}
-.hours .txt{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;display:flex;justify-content:space-between;gap:8px}
+.hours .txt{font-family:var(--f-mono);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;display:flex;justify-content:space-between;gap:8px}
 .hours .txt span:last-child{color:var(--muted)}
 .bar{position:relative;height:12px;background:var(--bar);border-radius:3px;overflow:hidden;margin-top:3px}
 .bar i{position:absolute;top:0;bottom:0;background:var(--barfill)}
 .bar b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--now)}
 .ticks{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
-.depts{font-size:12px;color:var(--muted)}
+.depts{font-size:13px;font-weight:600;color:var(--muted)}
 .beds{display:grid;grid-template-columns:minmax(110px,auto) repeat(3,minmax(0,1fr));gap:8px 16px;align-items:end}
 @media (max-width:480px){.beds{grid-template-columns:repeat(3,minmax(0,1fr))}.beds .big{grid-column:1/-1}}
 .bed{display:grid;gap:0}
 .bed .v{font-family:var(--f-mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
-.bed .k{font-size:12px;color:var(--muted)}
+.bed .k{font-size:13px;font-weight:700;color:var(--muted)}
 .big .v{font-size:34px;color:var(--c)}
 .big .v small{font-size:14px;color:var(--muted);font-weight:500}
 .equip{display:flex;flex-wrap:wrap;gap:4px}
@@ -101,7 +104,7 @@ button.stat{cursor:pointer}
 .eq.y{color:var(--open);border-color:var(--open)}
 .warn{font-size:12px;color:var(--danger);font-weight:600}
 .empty{padding:30px;text-align:center;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px}
-footer{font-size:12px;color:var(--muted);line-height:1.6}
+footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
 /* 지도 핀 */
 .pin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .pin svg{transform:rotate(45deg);width:19px;height:19px;color:#fff}
@@ -118,8 +121,8 @@ footer{font-size:12px;color:var(--muted);line-height:1.6}
 <div class="wrap">
   <header>
     <div>
-      <div class="eyebrow">동해시 · 실시간 의료기관 안내</div>
-      <h1>지금 문 연 약국·병원</h1>
+      <div class="eyebrow">동해시 실시간 의료기관 안내</div>
+      <h1>지금 문 연 <span class="k k-ph">약국</span><span class="sep">·</span><span class="k k-hp">병원</span><span class="sep">·</span><span class="k k-er">응급실</span></h1>
     </div>
     <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div></div>
   </header>
