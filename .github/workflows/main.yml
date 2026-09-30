@@ -4,7 +4,12 @@ on:
   schedule:
     - cron: "*/10 * * * *"   # 10분마다: 응급실 가용병상 (약국·병의원은 20시간마다 자동으로 함께 갱신)
     - cron: "50 20 * * *"    # 매일 05:50(한국시간): 약국·병의원 전체 새로 받기
-  workflow_dispatch:         # Actions 탭에서 수동 실행 (전체 새로 받기)
+  workflow_dispatch:         # Actions 탭 수동 실행 또는 외부 예약(cron-job.org)
+    inputs:
+      full:
+        description: "약국·병의원까지 전체 새로 받기"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -26,7 +31,7 @@ jobs:
         env:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.schedule }}" = "50 20 * * *" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" -a "${{ inputs.full }}" != "false" ] || [ "${{ github.event.schedule }}" = "50 20 * * *" ]; then
             python update_data.py --daily
           else
             python update_data.py
