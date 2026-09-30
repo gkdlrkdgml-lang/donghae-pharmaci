@@ -89,6 +89,8 @@ button.stat{cursor:pointer}
 .name svg{width:18px;height:18px;color:var(--muted);flex:none}
 .pill{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;color:var(--c);border:1px solid var(--c);white-space:nowrap}
 .tag.ov{color:#fff;font-weight:800}.tag.duty{background:var(--c-duty);border-color:var(--c-duty)}.tag.off{background:var(--c-off);border-color:var(--c-off)}
+.caution{font-size:14px;font-weight:700;line-height:1.5;color:#7a4a00;background:#fff4d6;border:1px solid #f0b429;border-radius:6px;padding:8px 10px}
+.caution b{color:#b25e00}
 .tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-weight:500}
 .meta{font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
 .tel{font-family:var(--f-mono);color:var(--ink);background:none;border:0;padding:0;cursor:pointer;font-size:13px}
@@ -226,7 +228,8 @@ let simTime=null;const now=()=>simTime?new Date(simTime):new Date();
 const dayKey=(d,force)=>force||HOLIDAYS.has(ymd(d))?8:(d.getDay()||7);
 function span(p,k){const t=p.t&&p.t[k];if(!t||!t[0]||!t[1])return null;let o=toMin(t[0]),c=toMin(t[1]);if(c<=o)c+=1440;return[o,c]}
 // ===== 당번·임시휴무 (duty.json, GitHub에서 직접 편집) =====
-let OV=[];
+let OV=[],NOTES=[];
+function noteFor(p){const n=NOTES.find(n=>n&&n.name===p.name&&(!n.tab||n.tab===p._t));return n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:""}
 function ovFor(p,d){if(!OV.length||p._t==="er")return null;const ds=ymd(d);
   return OV.find(o=>o&&o.name===p.name&&(!o.addr||String(p.addr||"").includes(o.addr))&&
     ((o.date&&o.date===ds)||(o.from&&o.from<=ds&&ds<=(o.to||o.from))))||null}
@@ -257,7 +260,7 @@ const DATA={ph:[],hp:[],er:[]},UPD={};
 const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
-async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[]}}catch(e){}}
+async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[]}}catch(e){}}
 async function loadAll(){await Promise.all(["ph","hp","er"].map(load).concat(loadOV()));initFilters();render()}
 async function loadER(){await load("er");render()}
 
@@ -346,12 +349,16 @@ function row(r,d){
   return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:${COL[r.s.st]}">
     <div class="name">${ic}${esc(p.name)} <span class="pill">${LAB[t][r.s.st]}</span>${tags}</div>
     <div class="meta"><span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
-    ${hoursHtml(r,d)}${ovMemo}${dep}${inf}</article>`;
+    ${noteFor(p)}${hoursHtml(r,d)}${ovMemo}${dep}${inf}</article>`;
 }
 function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
 function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
 function erRow(r){
   const h=r.p,b=h.b||{},col=COL[r.s.st];
+  if(h.nort)return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:var(--c-off)">
+    <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
+    ${noteFor(h)}<div class="warn" style="color:var(--muted)">실시간 병상 정보를 제공하지 않는 응급실입니다. 운영 여부는 전화로 확인하세요.</div>
+    <div class="meta">${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`;
   const over=b.hvec<0?`<div class="warn">과밀 +${-b.hvec} (병상보다 환자 많음)</div>`:"";
   const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hv10","소아 인공호흡기"],["hvincuayn","인큐베이터"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
   return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:${col}">
@@ -362,7 +369,7 @@ function erRow(r){
       <div class="bed"><span class="v">${erNum(b.hvgc)}</span><span class="k">입원실</span></div>
       <div class="bed"><span class="v">${erNum(b.hvoc)}</span><span class="k">수술실</span></div>
       <div class="bed"><span class="v">${b.hv28!=null?erNum(b.hv28):"–"}</span><span class="k">소아 응급</span></div>
-    </div>${over}
+    </div>${over}${noteFor(h)}
     ${eq?`<div class="equip">${eq}</div>`:""}
     <div class="meta"><span>병원 입력 ${esc(erTime(b.hvidate))}</span>${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
   </article>`;
@@ -372,9 +379,10 @@ function findSel(d){if(!selKey)return null;const t=selKey.slice(0,2);return rows
 function showInfo(d){
   const box=$("#info"),r=findSel(d);if(!r){box.hidden=true;return}
   box.hidden=false;const p=r.p;
-  if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div><div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
+  if(r.t==="er"&&p.nort){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">${esc(p.cls||"")}</span></div>${noteFor(p)}<div>실시간 병상 정보 미제공 · 운영 여부는 전화로 확인하세요</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
+  if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   const s=r.s,ht=s.today?(s.today[0]===0&&s.today[1]>=1440?`${DAYN[s.k]} 24시간`:`${DAYN[s.k]} ${fmt(s.today[0])}–${fmt(s.today[1])}`):"오늘 휴무/미등록";
-  box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}</div><div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
+  box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}</div>${noteFor(p)}<div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
 }
 
 // ===== 지도 =====
@@ -390,7 +398,7 @@ function drawMap(d){
     visible(t,d).forEach(r=>{const p=r.p;if(!p.lat||!p.lon)return;
       const sel=p._k===selKey,off=t!=="er"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
       const ic=t==="ph"?IC.ph:t==="er"?IC.er:IC[hpIcon(p)];
-      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?erNum(p.b&&p.b.hvec):isDuty?"당번":null;const bc=isDuty?tok("--c-duty"):bcol;
+      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&p.nort)?"#b25e00":bcol;
       const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
         zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);

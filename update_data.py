@@ -225,6 +225,10 @@ def update_er(refresh_base):
         for i in call_all(ER_RT, {"STAGE1": SIDO, "STAGE2": city}):
             beds[i.get("hpid")] = ({k: i[k] for k in BED_FIELDS if i.get(k, "") != ""}, city, i)
     out = []
+    # 실시간 병상을 입력하지 않는 응급실(응급실운영신고기관 등)도 목록에 포함
+    for hpid, h in base.items():
+        if hpid not in beds:
+            out.append(dict(h, b={}, nort=1))
     for hpid, (b, city, raw) in beds.items():
         h = dict(base.get(hpid) or {"id": hpid, "name": raw.get("dutyName", ""), "city": city,
                                     "tel": raw.get("dutyTel3", "")})
