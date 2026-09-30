@@ -1,11 +1,10 @@
-yaml
 name: 의료기관 데이터 갱신
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
-    - cron: "50 20 * * *"
-  workflow_dispatch:
+    - cron: "*/10 * * * *"   # 10분마다: 응급실 가용병상 (약국·병의원은 20시간마다 자동으로 함께 갱신)
+    - cron: "50 20 * * *"    # 매일 05:50(한국시간): 약국·병의원 전체 새로 받기
+  workflow_dispatch:         # Actions 탭에서 수동 실행 (전체 새로 받기)
 
 permissions:
   contents: write
