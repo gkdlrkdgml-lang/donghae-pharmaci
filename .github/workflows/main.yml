@@ -1,0 +1,33 @@
+name: 약국 데이터 갱신
+
+on:
+  schedule:
+    - cron: "50 20 * * *"   # 매일 05:50 (한국시간) — GitHub 사정으로 수십 분 늦게 돌 수 있음
+  workflow_dispatch:         # Actions 탭에서 수동 실행 가능
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 공공데이터 API 조회 → pharmacy.json 생성
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: python update_pharmacy.py
+      - name: 변경 내용 저장
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pharmacy.json
+          if git diff --staged --quiet; then
+            echo "변경 없음"
+          else
+            git commit -m "약국 데이터 갱신 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+            git push
+          fi
