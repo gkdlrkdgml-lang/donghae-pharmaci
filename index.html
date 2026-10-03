@@ -6,6 +6,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <title>동해시 의료기관 운영현황</title>
+<meta name="theme-color" content="#0b3a66">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* 상단 요약 → 탭(약국/병·의원/응급실) → 지도 + 목록 */
 :root{
@@ -153,6 +155,115 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
 .badge{position:absolute;top:-8px;right:-12px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:#fff;color:#15202b;border:2px solid currentColor;font:700 13px/18px var(--f-mono);text-align:center}
 .leaflet-div-icon{background:none;border:0}
 .leaflet-container{font-family:var(--f-body)}
+
+/* ===== 디자인 개편: 동해 바다색 헤더 + 부드러운 카드 ===== */
+:root{
+  --bg:#f2f5f9; --panel:#ffffff; --ink:#0e1a2b; --muted:#4a5a70; --line:#e2e8f0;
+  --accent:#0a66c2; --open:#0e9f6e; --soon:#d97706; --closed:#94a3b8; --danger:#dc2626;
+  --bar:#e8edf3; --barfill:#8fdcbf; --now:#ef4444; --mapbg:#e8eef4;
+  --c-ph:#0e9f6e; --c-hp:#2563eb; --c-er:#e11d48; --c-aed:#ea580c; --c-off:#a3aebd; --c-duty:#7c3aed; --maybe:#b45309;
+  --sea1:#082f57; --sea2:#0b5c8f; --sea3:#12879e;
+  --shadow:0 1px 2px rgba(15,30,60,.05),0 6px 16px rgba(15,30,60,.06);
+  --f-body:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  --f-mono:var(--f-body);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1320; --panel:#131d2d; --ink:#f1f5f9; --muted:#a9b6c8; --line:#243349;
+  --accent:#60a5fa; --open:#34d399; --soon:#fbbf24; --closed:#64748b; --danger:#f87171;
+  --bar:#1e2b3f; --barfill:#1f7a5c; --now:#f87171; --mapbg:#0f1a29;
+  --c-ph:#10b981; --c-hp:#3b82f6; --c-er:#f43f5e; --c-off:#56657a; --maybe:#fbbf24;
+  --sea1:#061b33; --sea2:#0a3a5e; --sea3:#0d5b6e; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 16px rgba(0,0,0,.25)}}
+:root[data-theme="dark"]{
+  --bg:#0b1320; --panel:#131d2d; --ink:#f1f5f9; --muted:#a9b6c8; --line:#243349;
+  --accent:#60a5fa; --open:#34d399; --soon:#fbbf24; --closed:#64748b; --danger:#f87171;
+  --bar:#1e2b3f; --barfill:#1f7a5c; --now:#f87171; --mapbg:#0f1a29;
+  --c-ph:#10b981; --c-hp:#3b82f6; --c-er:#f43f5e; --c-off:#56657a; --maybe:#fbbf24;
+  --sea1:#061b33; --sea2:#0a3a5e; --sea3:#0d5b6e; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 16px rgba(0,0,0,.25)}
+body{font-weight:500;letter-spacing:-.01em;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+.wrap{gap:16px;padding-block:16px 56px}
+/* 헤더: 동해 바다 */
+header{position:relative;overflow:hidden;align-items:center;padding:22px 26px 30px;border-radius:20px;color:#fff;
+  background:linear-gradient(120deg,var(--sea1) 0%,var(--sea2) 55%,var(--sea3) 100%);box-shadow:var(--shadow)}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:26px;pointer-events:none;opacity:.5;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 30c100-24 200-24 300 0s200 24 300 0 200-24 300 0 200 24 300 0v30H0z' fill='%23ffffff' fill-opacity='.18'/%3E%3Cpath d='M0 40c100-18 200-18 300 0s200 18 300 0 200-18 300 0 200 18 300 0v20H0z' fill='%23ffffff' fill-opacity='.22'/%3E%3C/svg%3E") center/100% 100% no-repeat}
+header>*{position:relative;z-index:1}
+.eyebrow{color:rgba(255,255,255,.82);font-size:14px;font-weight:700;letter-spacing:.04em}
+h1{font-size:32px;font-weight:800;letter-spacing:-.03em;color:#fff;margin-top:6px}
+h1 .sep{color:rgba(255,255,255,.45)}
+h1 .k-ph{color:#6ee7b7}h1 .k-hp{color:#93c5fd}h1 .k-er{color:#fda4af}
+.clock .t{font-size:34px;font-weight:800;letter-spacing:-.02em;color:#fff}
+.clock .d{color:rgba(255,255,255,.8);font-weight:600}
+#board{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;backdrop-filter:blur(4px)}
+#board:hover{background:rgba(255,255,255,.26);border-color:#fff}
+@media (max-width:480px){header{padding:18px 18px 26px;border-radius:16px}h1{font-size:24px}.clock .t{font-size:26px}}
+/* 안내줄 */
+.notice{background:none;border:0;padding:0 4px;font-size:13px;font-weight:600;color:var(--muted)}
+.notice.bad{background:color-mix(in srgb,var(--danger) 10%,var(--panel));border:1px solid var(--danger);border-radius:12px;padding:10px 14px}
+/* 탭: 알약 모양 */
+.tabs{border:0;gap:8px;align-items:center}
+.tab{border:1px solid var(--line);border-radius:999px;background:var(--panel);padding:9px 16px;font-size:16px;font-weight:700;color:var(--ink);box-shadow:var(--shadow);transition:background .15s,color .15s,transform .15s}
+.tab:hover{transform:translateY(-1px)}
+.tab[aria-selected="true"]{background:var(--tc);border-color:var(--tc);color:#fff}
+.tab[aria-selected="true"] svg,.tab[aria-selected="true"] .c{color:#fff}
+.tab .c{font-size:13px;font-weight:700;background:color-mix(in srgb,var(--tc) 12%,transparent);color:var(--tc);border-radius:999px;padding:0 8px}
+.tab[aria-selected="true"] .c{background:rgba(255,255,255,.25)}
+.hint{border:0;background:color-mix(in srgb,var(--accent) 9%,var(--panel));font-size:13px;font-weight:600}
+/* 요약 카드 */
+.summary{gap:12px}
+.stat{border-radius:16px;padding:14px 18px;box-shadow:var(--shadow);gap:4px;transition:transform .15s,box-shadow .15s}
+button.stat:hover{transform:translateY(-2px)}
+.stat[aria-pressed="true"]{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent),var(--shadow)}
+.stat .n{font-size:34px;font-weight:800;letter-spacing:-.03em}
+.stat .l{font-size:14px;font-weight:600}
+.dot{width:10px;height:10px}
+/* 검색·필터 */
+.tools{gap:8px}
+.tools input,.tools select{border-radius:12px;padding:9px 12px;font-size:14px;font-weight:500}
+.tools input[type=search]{padding-left:14px}
+.btn{border-radius:10px;font-weight:600}
+.quick{border-radius:999px;border-width:1.5px;padding:8px 14px}
+.quick.sm{border-radius:999px;padding:8px 14px;background:var(--panel);box-shadow:var(--shadow)}
+.kidnote{border-radius:12px;border:0;background:color-mix(in srgb,var(--c-hp) 8%,var(--panel));padding:10px 14px;line-height:1.6}
+/* 지도 */
+.mapwrap{border-radius:18px;box-shadow:var(--shadow)}
+.maphead{padding:10px 14px}
+.chip{padding:5px 12px;font-size:13px;font-weight:600}
+.legend{padding:10px 14px;font-size:12px}
+.info{padding:12px 14px;font-size:14px}
+/* 목록 카드 */
+.list{gap:10px}
+.row{border-left-width:1px;border-radius:16px;padding:14px 16px;gap:8px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s;position:relative}
+.row::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--c,var(--closed))}
+.row:hover{transform:translateY(-1px)}
+.row.sel{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent),var(--shadow)}
+.name{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.pill{border:0;padding:3px 10px;font-size:12px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.tag{border-radius:6px;padding:1px 7px;font-weight:600;background:color-mix(in srgb,var(--muted) 8%,transparent);border-color:transparent}
+.tag.spc{border-radius:999px;padding:2px 10px;background:color-mix(in srgb,var(--c-hp) 14%,transparent);color:var(--c-hp);border:0}
+.tag.ov{border-radius:999px;padding:2px 10px}
+.fxn{border:0;background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:999px;padding:1px 8px}
+.meta{font-weight:500;font-size:14px}
+.tel{font-weight:700;font-size:14px}
+.nlink{font-weight:600}
+.hours .txt{font-size:14px;font-weight:700}
+.bar{height:8px;border-radius:999px;margin-top:4px}
+.bar i{border-radius:999px}
+.bar b{width:3px;border-radius:2px;top:-3px;bottom:-3px}
+.ticks{font-size:10px;opacity:.75}
+.caution{border-radius:12px;border:0;background:#fff3cd;color:#6b4300;padding:10px 12px}
+.bed .v{font-size:22px;font-weight:800}
+.big .v{font-size:40px;letter-spacing:-.03em}
+.eq{border-radius:999px;padding:1px 9px;font-weight:600}
+.kid{padding:3px 11px}
+.empty{border-radius:16px;box-shadow:var(--shadow)}
+footer{font-size:12px;line-height:1.7;padding:4px 4px 0;border-top:1px solid var(--line);padding-top:14px}
+/* 지도 핀 */
+.pin{width:36px;height:36px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(8,30,60,.35)}
+.pinwrap{width:36px;height:36px}
+.badge{font-family:var(--f-body);font-weight:800;box-shadow:0 2px 5px rgba(8,30,60,.3)}
+.leaflet-control-zoom a{border-radius:10px!important}
+.leaflet-bar{border:0!important;box-shadow:var(--shadow)!important;border-radius:12px!important;overflow:hidden}
+@media (prefers-reduced-motion:reduce){.tab,.stat,.row{transition:none}}
 </style>
 </head>
 <body>
@@ -480,7 +591,7 @@ function drawMap(d){
       const sel=p._k===selKey,off=t!=="er"&&t!=="aed"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
       const ic=t==="ph"?IC.ph:t==="er"?IC.er:t==="aed"?IC.aed:IC[hpIcon(p)];
       const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":r.s.st==="maybe"?"?":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&p.nort)?"#b25e00":r.s.st==="maybe"?tok("--maybe"):bcol;
-      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon",r.s.st==="maybe"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
+      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon",r.s.st==="maybe"),className:"",iconSize:[36,36],iconAnchor:[18,43]}),
         zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:t==="aed"?"AED":LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);
     });
