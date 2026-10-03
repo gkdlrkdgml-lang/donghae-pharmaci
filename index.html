@@ -254,6 +254,17 @@ button.stat:hover{transform:translateY(-2px)}
 .hnews{display:flex;align-items:center;gap:8px;margin:10px 0;padding:11px 14px;border-radius:14px;background:#fff;border:1px solid #d6e4f0;box-shadow:0 2px 8px rgba(20,60,110,.08);text-decoration:none;color:#12324f;font-weight:700;font-size:15px}
 .hnews:hover{border-color:#1769c2}.hn-l{flex:none;color:#0b5cab;font-weight:800}.hn-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hn-new{flex:none;background:#e53935;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px}.hn-go{flex:none;font-size:20px;color:#7a8da0}
+.wrap>*{min-width:0}html,body{overflow-x:hidden}
+@media (max-width:560px){
+  .wrap{padding-inline:10px;gap:12px}
+  header{padding:16px 16px 24px}h1{font-size:22px}.clock .t{font-size:22px}
+  .tabs{gap:6px}.tab{flex:1 1 calc(50% - 6px);justify-content:center;padding:9px 8px;font-size:15px}
+  .hnews{padding:10px 12px;font-size:14px;gap:6px}
+  .tools>*{max-width:100%}.tools input[type=search],.tools #q{flex:1 1 100%}.tools select{flex:1 1 calc(50% - 8px);min-width:0}
+  .tools input[type=datetime-local]{min-width:0;max-width:100%}
+  #map{height:56vh;min-height:320px}
+  .row .meta{gap:6px}.notice{font-size:12.5px}
+}
 .caution.stop{background:#c62828;color:#fff;font-size:15px}
 .bed .v{font-size:22px;font-weight:800}
 .big .v{font-size:40px;letter-spacing:-.03em}
