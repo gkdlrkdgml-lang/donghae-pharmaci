@@ -265,6 +265,27 @@ button.stat:hover{transform:translateY(-2px)}
   #map{height:56vh;min-height:320px}
   .row .meta{gap:6px}.notice{font-size:12.5px}
 }
+.qfind{display:grid;gap:10px}
+.q-main{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:18px;padding:16px 18px;cursor:pointer;font:inherit;color:#fff;background:linear-gradient(135deg,#0b63c5,#0aa37f);box-shadow:0 6px 18px rgba(11,99,197,.28)}
+.q-main svg{width:30px;height:30px;flex:none}.q-main b{display:block;font-size:19px;font-weight:800}.q-main small{display:block;font-size:13px;font-weight:600;opacity:.92;margin-top:2px}
+.q-main:active{transform:scale(.99)}
+.q-sits{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.q-sit{font:inherit;font-size:15px;font-weight:800;padding:12px 8px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)}
+.q-sit.er{border-color:#f3b4b4;color:#c62828}.q-sit[aria-pressed=true]{outline:3px solid #0b63c5;outline-offset:1px}
+.q-res{display:grid;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+.q-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;font-size:15px}
+.q-x{font:inherit;border:0;background:none;color:var(--muted);font-weight:700;cursor:pointer;padding:4px 6px}
+.q-msg{font-size:14px;font-weight:700;color:var(--muted)}
+.q-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.q-card{border:1px solid var(--line);border-left:5px solid var(--c);border-radius:12px;padding:10px 12px;display:grid;gap:4px}
+.q-card .q-k{font-size:12.5px;font-weight:800;color:var(--c)}.q-card .q-n{font-size:17px;font-weight:800}
+.q-card .q-s{font-size:14px;font-weight:700}.q-card .q-d{color:#0b63c5;font-weight:800}
+.q-card.none{border-left-color:var(--c-off);color:var(--muted);font-weight:700;font-size:14px}
+.q-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.q-act a,.q-act button{font:inherit;font-size:14px;font-weight:800;text-decoration:none;border-radius:999px;padding:7px 12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.q-act a.call{background:#0aa37f;border-color:#0aa37f;color:#fff}.q-act a.c119{background:#c62828;border-color:#c62828;color:#fff}
+body.board .qfind{display:none!important}
+@media (max-width:560px){.q-sits{grid-template-columns:repeat(2,1fr)}.q-main b{font-size:17px}}
 .caution.stop{background:#c62828;color:#fff;font-size:15px}
 .bed .v{font-size:22px;font-weight:800}
 .big .v{font-size:40px;letter-spacing:-.03em}
@@ -293,6 +314,16 @@ footer{font-size:12px;line-height:1.7;padding:4px 4px 0;border-top:1px solid var
     <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div><button class="btn" id="board" style="margin-top:4px;font-size:12px;padding:3px 10px">상황판 모드</button></div>
   </header>
 
+  <section class="qfind" id="quick" aria-label="빠른 찾기">
+    <button class="q-main" id="q-all"><span data-ic="loc"></span><span><b>지금 제일 가까운 곳 찾기</b><small>내 위치에서 가장 가까운 문 연 약국·병원·응급실</small></span></button>
+    <div class="q-sits">
+      <button class="q-sit" data-q="kid">👶 아이가 아파요</button>
+      <button class="q-sit" data-q="med">💊 약이 필요해요</button>
+      <button class="q-sit" data-q="hosp">🩺 진료받고 싶어요</button>
+      <button class="q-sit er" data-q="emer">🚑 응급이에요</button>
+    </div>
+    <div class="q-res" id="q-res" hidden></div>
+  </section>
   <a class="hnews" id="hnews" href="https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918" target="_blank" rel="noopener"><span class="hn-l">📢 보건소 새소식</span><span class="hn-new" id="hn-new" hidden>NEW</span><span class="hn-t" id="hn-t">동해시 보건소 공지사항 보기</span><span class="hn-go">›</span></a>
   <div class="notice" id="src">데이터를 불러오는 중입니다.</div>
 
@@ -652,6 +683,56 @@ $("#near").onclick=()=>{
   b.lastChild.textContent=" 위치 확인 중…";
   navigator.geolocation.getCurrentPosition(pos=>{userPos=[pos.coords.latitude,pos.coords.longitude];near=true;fitted=false;b.lastChild.textContent=" 내 위치 가까운 순";render()},
     ()=>{b.lastChild.textContent=" 위치 권한을 허용해 주세요"},{enableHighAccuracy:true,timeout:10000,maximumAge:60000})};
+// ── 빠른 찾기(가까운 곳·상황별) ──
+let quickKind=null;
+const isOpenRow=r=>["open","soon","maybe"].includes(r.s.st);
+function setTab(t){tab=t;filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t))}
+function nearRows(t,pred,n){return rowsOf(t,now()).filter(r=>r.p.lat&&pred(r)).map(r=>({r,m:distM(r.p)})).sort((a,b)=>(a.m??1e12)-(b.m??1e12)).slice(0,n||1)}
+function qCard(label,x){const r=x.r,p=r.p,t=r.t;let st;
+  if(t==="er"){const b=p.b||{};st=p.nort?"실시간 병상 정보 없음 · 전화 확인":`응급실 병상 ${erNum(b.hvec)}`+(b.hv28>0?` · 소아 ${b.hv28}`:"")}
+  else st=LAB[t][r.s.st]+(r.s.open?` · ${fmt(r.s.open[1])}까지`:"");
+  const tel=(p.tel||"").replace(/[^0-9]/g,"");
+  return `<div class="q-card" style="--c:var(--c-${t})"><div class="q-k">${label}</div><div class="q-n">${esc(p.name)}</div>
+    <div class="q-s">${x.m!=null?`<span class="q-d">${distTxt(x.m)}</span> · `:""}${esc(st)}</div>
+    <div class="q-act">${tel?`<a class="call" href="tel:${tel}">📞 전화</a>`:""}<a href="${naver(p)}" target="_blank" rel="noopener">길찾기</a><button data-go="${p._k}" data-gt="${t}">지도에서 보기</button></div></div>`}
+const qNone=msg=>`<div class="q-card none">${msg}</div>`;
+function drawQuick(){
+  const k=quickKind,box=$("#q-res");document.querySelectorAll(".q-sit").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===k));
+  if(!k){box.hidden=true;return}
+  const erOk=r=>!erClosed(r.p),er=n=>nearRows("er",erOk,n).map(x=>qCard("응급실",x));
+  const ph=n=>nearRows("ph",isOpenRow,n).map(x=>qCard("약국",x));
+  const med=r=>!["치과의원","한의원","요양병원"].includes(r.p.div);const hp=(n,f)=>nearRows("hp",r=>isOpenRow(r)&&(f||med)(r),n);
+  let title,cards=[],extra="";
+  if(k==="all"){title="지금 제일 가까운 곳";const a=ph(1),h=hp(1).map(x=>qCard("병·의원",x));
+    cards=[a[0]||qNone("지금 문 연 약국이 없습니다"),h[0]||qNone("지금 진료 중인 병·의원이 없습니다"),...er(1)]}
+  else if(k==="med"){title="지금 문 연 약국";const a=ph(2);cards=a.length?a:[qNone("지금 문 연 약국이 없습니다. 급하시면 응급실을 이용하세요."),...er(1)]}
+  else if(k==="hosp"){title="지금 진료 중인 병·의원";const h=hp(2).map(x=>qCard("병·의원",x));cards=h.length?h:[qNone("지금 진료 중인 병·의원이 없습니다. 급하시면 응급실을 이용하세요."),...er(1)]}
+  else if(k==="kid"){title="아이가 아플 때";const h=hp(2,r=>(r.p.d||[]).includes("소아청소년과")).map(x=>qCard("소아청소년과",x));
+    cards=[...(h.length?h:[qNone("지금 진료 중인 소아청소년과가 없습니다. 아래 응급실로 전화 후 방문하세요.")]),...er(1)];
+    extra="응급실은 소아 전용병상 표시가 없어도 소아 환자를 진료합니다. 방문 전 전화로 확인하세요."}
+  else{title="응급 상황";cards=er(2);extra="의식이 없거나 숨쉬기 힘들면 바로 119에 전화하세요."}
+  box.hidden=false;
+  box.innerHTML=`<div class="q-head"><span>${title}</span><span class="q-act">${k==="emer"||k==="kid"?`<a class="c119" href="tel:119">📞 119</a>`:""}<button class="q-x" id="q-x">닫기 ✕</button></span></div>
+    ${userPos?"":`<div class="q-msg">위치를 확인하지 못해 거리 순으로 보여드리지 못했습니다. 위치 권한을 허용한 뒤 다시 눌러 주세요.</div>`}
+    <div class="q-cards">${cards.join("")}</div>${extra?`<div class="q-msg">${extra}</div>`:""}`;
+}
+function runQuick(k){
+  quickKind=k;
+  if(k==="med"){setTab("ph");filter="open"}
+  else if(k==="hosp"){setTab("hp");$("#dept").value="";filter="open"}
+  else if(k==="kid"){setTab("hp");$("#dept").value="소아청소년과";filter="open"}
+  else if(k==="emer")setTab("er");
+  const done=()=>{render();drawQuick();$("#quick").scrollIntoView({behavior:"smooth",block:"start"})};
+  if(!navigator.geolocation){done();return}
+  $("#q-res").hidden=false;$("#q-res").innerHTML=`<div class="q-msg">위치 확인 중…</div>`;
+  navigator.geolocation.getCurrentPosition(pos=>{userPos=[pos.coords.latitude,pos.coords.longitude];near=true;fitted=false;done()},()=>done(),{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+}
+$("#quick").addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]");if(g){setTab(g.dataset.gt);selKey=g.dataset.go;layers[g.dataset.gt]=true;render();$("#map").scrollIntoView({behavior:"smooth",block:"center"});return}
+  if(e.target.closest("#q-x")){quickKind=null;drawQuick();return}
+  if(e.target.closest("#q-all")){runQuick("all");return}
+  const b=e.target.closest(".q-sit");if(b)runQuick(b.dataset.q)});
+setInterval(()=>{if(quickKind)drawQuick()},60000);
 $("#late").onclick=()=>{late=!late;fitted=false;render()};
 $("#sun").onclick=()=>{sun=!sun;fitted=false;render()};
 // 상황판 모드: 큰 글씨, 필터 숨김, 30초마다 탭 자동 전환 (#board 주소로 바로 열기 가능)
