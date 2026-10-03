@@ -251,6 +251,7 @@ button.stat:hover{transform:translateY(-2px)}
 .bar b{width:3px;border-radius:2px;top:-3px;bottom:-3px}
 .ticks{font-size:10px;opacity:.75}
 .caution{border-radius:12px;border:0;background:#fff3cd;color:#6b4300;padding:10px 12px}
+.caution.stop{background:#c62828;color:#fff;font-size:15px}
 .bed .v{font-size:22px;font-weight:800}
 .big .v{font-size:40px;letter-spacing:-.03em}
 .eq{border-radius:999px;padding:1px 9px;font-weight:600}
@@ -370,7 +371,13 @@ const dayKey=(d,force)=>force||HOLIDAYS.has(ymd(d))?8:(d.getDay()||7);
 function span(p,k){const t=p.t&&p.t[k];if(!t||!t[0]||!t[1])return null;let o=toMin(t[0]),c=toMin(t[1]);if(c<=o)c+=1440;return[o,c]}
 // ===== 당번·임시휴무 (duty.json, GitHub에서 직접 편집) =====
 let OV=[],NOTES=[];
-function noteFor(p){const n=NOTES.find(n=>n&&n.name===p.name&&(!n.tab||n.tab===p._t));return n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:""}
+let ERC=[];const erT=v=>new Date(String(v).replace(" ","T")+":00+09:00").getTime();
+const erFmt=v=>{const d=new Date(erT(v)+9*3600e3);return (d.getUTCMonth()+1)+"/"+d.getUTCDate()+"("+"일월화수목금토"[d.getUTCDay()]+") "+String(v).slice(11)};
+function erClosed(p){const t=now().getTime();return ERC.find(c=>c&&c.name===p.name&&erT(c.from)<=t&&t<erT(c.to))||null}
+function erStopHtml(p){const t=now().getTime(),c=erClosed(p),up=ERC.filter(x=>x&&x.name===p.name&&erT(x.from)>t&&erT(x.from)-t<45*864e5).sort((a,b)=>erT(a.from)-erT(b.from));
+  let h="";if(c)h+=`<div class="caution stop"><b>⛔ 응급실 운영 중단 중</b> ${erFmt(c.from)} ~ ${erFmt(c.to)} · 다른 응급실을 이용하세요</div>`;
+  if(up.length)h+=`<div class="caution"><b>응급실 운영 중단 예정</b><br>${up.map(x=>erFmt(x.from)+" ~ "+erFmt(x.to)).join("<br>")}</div>`;return h}
+function noteFor(p){const n=NOTES.find(n=>n&&n.name===p.name&&(!n.tab||n.tab===p._t));return (p._t==="er"||p.er?erStopHtml(p):"")+(n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:"")}
 function ovFor(p,d){if(!OV.length||p._t==="er")return null;const ds=ymd(d);
   return OV.find(o=>o&&o.name===p.name&&(!o.addr||String(p.addr||"").includes(o.addr))&&
     ((o.date&&o.date===ds)||(o.from&&o.from<=ds&&ds<=(o.to||o.from))))||null}
@@ -416,7 +423,7 @@ const DATA={ph:[],hp:[],er:[],aed:[]},UPD={};let HIST={},BADGES=[];
 const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
-async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[]}}catch(e){}}
+async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[]}}catch(e){}}
 async function loadHist(){try{const r=await fetch("er_history.json?t="+Date.now(),{cache:"no-store"});if(r.ok)HIST=await r.json()}catch(e){}}
 async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist()));initFilters();render()}
 async function loadER(){await Promise.all([load("er"),loadHist()]);render()}
@@ -590,7 +597,7 @@ function drawMap(d){
     visible(t,d).forEach(r=>{const p=r.p;if(!p.lat||!p.lon)return;
       const sel=p._k===selKey,off=t!=="er"&&t!=="aed"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
       const ic=t==="ph"?IC.ph:t==="er"?IC.er:t==="aed"?IC.aed:IC[hpIcon(p)];
-      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":r.s.st==="maybe"?"?":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&p.nort)?"#b25e00":r.s.st==="maybe"?tok("--maybe"):bcol;
+      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(erClosed(p)?"중단":p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":r.s.st==="maybe"?"?":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&erClosed(p))?"#c62828":(t==="er"&&p.nort)?"#b25e00":r.s.st==="maybe"?tok("--maybe"):bcol;
       const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon",r.s.st==="maybe"),className:"",iconSize:[36,36],iconAnchor:[18,43]}),
         zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:t==="aed"?"AED":LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);
