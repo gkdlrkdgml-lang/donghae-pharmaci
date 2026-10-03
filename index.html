@@ -251,6 +251,9 @@ button.stat:hover{transform:translateY(-2px)}
 .bar b{width:3px;border-radius:2px;top:-3px;bottom:-3px}
 .ticks{font-size:10px;opacity:.75}
 .caution{border-radius:12px;border:0;background:#fff3cd;color:#6b4300;padding:10px 12px}
+.hnews{display:flex;align-items:center;gap:8px;margin:10px 0;padding:11px 14px;border-radius:14px;background:#fff;border:1px solid #d6e4f0;box-shadow:0 2px 8px rgba(20,60,110,.08);text-decoration:none;color:#12324f;font-weight:700;font-size:15px}
+.hnews:hover{border-color:#1769c2}.hn-l{flex:none;color:#0b5cab;font-weight:800}.hn-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hn-new{flex:none;background:#e53935;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px}.hn-go{flex:none;font-size:20px;color:#7a8da0}
 .caution.stop{background:#c62828;color:#fff;font-size:15px}
 .bed .v{font-size:22px;font-weight:800}
 .big .v{font-size:40px;letter-spacing:-.03em}
@@ -279,6 +282,7 @@ footer{font-size:12px;line-height:1.7;padding:4px 4px 0;border-top:1px solid var
     <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div><button class="btn" id="board" style="margin-top:4px;font-size:12px;padding:3px 10px">상황판 모드</button></div>
   </header>
 
+  <a class="hnews" id="hnews" href="https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918" target="_blank" rel="noopener"><span class="hn-l">📢 보건소 새소식</span><span class="hn-new" id="hn-new" hidden>NEW</span><span class="hn-t" id="hn-t">동해시 보건소 공지사항 보기</span><span class="hn-go">›</span></a>
   <div class="notice" id="src">데이터를 불러오는 중입니다.</div>
 
   <nav class="tabs" role="tablist" aria-label="기관 종류">
@@ -425,6 +429,10 @@ async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
 async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[]}}catch(e){}}
 async function loadHist(){try{const r=await fetch("er_history.json?t="+Date.now(),{cache:"no-store"});if(r.ok)HIST=await r.json()}catch(e){}}
+let NEWS=[],newsI=0;
+function showNews(){if(!NEWS.length)return;const n=NEWS[newsI%NEWS.length];newsI++;$("#hn-t").textContent=n.title+(n.date?" ("+n.date.slice(5).replace("-","/")+")":"");
+  $("#hn-new").hidden=!(n.date&&(Date.now()-new Date(n.date+"T00:00:00+09:00").getTime())<3*864e5)}
+async function loadNews(){try{const r=await fetch("notice.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();NEWS=(j.items||[]).slice(0,5);newsI=0;showNews()}}catch(e){}}
 async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist()));initFilters();render()}
 async function loadER(){await Promise.all([load("er"),loadHist()]);render()}
 // 거리(m)
@@ -648,6 +656,7 @@ $("#zfit").onclick=()=>{selKey=null;fitted=false;render()};
 render();loadAll();if(location.hash==="#board")setBoard(true);
 setInterval(()=>{if(!simTime)render()},60000);   // 1분마다 영업 상태 재계산
 setInterval(()=>{loadOV().then(render)},10*60000);
+loadNews();setInterval(loadNews,15*60000);setInterval(showNews,6000);
 setInterval(loadER,5*60000);                      // 5분마다 응급실 병상 재조회
 setInterval(loadAll,15*60000);                    // 15분마다 약국·병의원 재조회(서버는 1시간마다 갱신)
 </script>

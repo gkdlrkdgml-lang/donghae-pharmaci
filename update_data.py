@@ -281,6 +281,55 @@ def update_aed():
     log(f"AED {len(out)}곳")
 
 
+NOTICE_URL = "https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918"   # 동해시 보건소 새소식 게시판
+
+
+def update_notice():
+    """보건소 새소식 게시판 최신 글 목록(제목·날짜·링크). 1시간에 한 번, 실패해도 무시."""
+    import html as _html
+    import re
+    import ssl
+    path = os.path.join(BASE, "notice.json")
+    if os.path.exists(path):
+        try:
+            old = json.load(open(path, encoding="utf-8"))
+            last = datetime.strptime(old["checked"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
+            if NOW - last < timedelta(minutes=55):
+                return
+        except Exception:
+            pass
+    ctx = ssl.create_default_context()
+    try:
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")   # 구형 암호화 방식을 쓰는 관공서 서버 대응(인증서 검증은 유지)
+    except Exception:
+        pass
+    req = urllib.request.Request(NOTICE_URL, headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "ko"})
+    raw = urllib.request.urlopen(req, timeout=20, context=ctx).read()
+    try:
+        page = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        page = raw.decode("euc-kr", "replace")
+    items, seen = [], set()
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", page, re.S | re.I):
+        m = re.search(r"<a[^>]+href=[\"']([^\"']*nttNo=(\d+)[^\"']*)[\"'][^>]*>(.*?)</a>", row, re.S | re.I)
+        if not m or m.group(2) in seen:
+            continue
+        seen.add(m.group(2))
+        title = " ".join(_html.unescape(re.sub(r"<[^>]+>", " ", m.group(3))).split())
+        title = re.sub(r"\s*(새글|새 글|NEW|첨부파일.*)$", "", title).strip()
+        d = re.search(r"(20\d{2})[-./](\d{1,2})[-./](\d{1,2})", re.sub(r"<[^>]+>", " ", row[m.end():]))
+        if not title:
+            continue
+        items.append({"no": int(m.group(2)), "title": title,
+                      "date": "%s-%02d-%02d" % (d.group(1), int(d.group(2)), int(d.group(3))) if d else "",
+                      "url": urllib.parse.urljoin(NOTICE_URL, _html.unescape(m.group(1)))})
+    if not items:
+        raise RuntimeError("게시글 0건(페이지 구조 변경 또는 접속 차단)")
+    items.sort(key=lambda x: (x["date"], x["no"]), reverse=True)
+    write("notice.json", {"checked": NOW.strftime("%Y-%m-%d %H:%M"), "board": NOTICE_URL, "items": items[:8]})
+    log(f"보건소 새소식 {len(items)}건")
+
+
 def main():
     ok, fail = 0, 0
     daily = due("hospital.json") or due("pharmacy.json")
@@ -294,6 +343,10 @@ def main():
             update_aed()
         except Exception as e:  # AED는 선택 기능: 실패해도 전체 결과에 영향 없음
             log(f"AED 건너뜀: {e}")
+    try:
+        update_notice()
+    except Exception as e:  # 선택 기능: 실패해도 영향 없음
+        log(f"보건소 새소식 건너뜀: {e}")
     for name, fn in jobs:
         try:
             fn()
