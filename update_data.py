@@ -36,6 +36,8 @@ PHARM = API + "ErmctInsttInfoInqireService/getParmacyListInfoInqire"
 HOSP = API + "HsptlAsembySearchService/getHsptlMdcncListInfoInqire"
 ER_RT = API + "ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire"
 ER_LIST = API + "ErmctInfoInqireService/getEgytListInfoInqire"
+AED = API + "AEDInfoInqireService/getEgytAedManageInfoInqire"   # 활용신청: 국립중앙의료원_전국 자동심장충격기(AED) 정보 조회 서비스
+HIST_KEEP = 36   # 응급실 병상 추이 보관 개수(10분 간격 × 36 = 6시간)
 
 # 진료과목 코드 (병·의원 찾기 서비스 QD 파라미터)
 DEPTS = [("D001", "내과"), ("D002", "소아청소년과"), ("D003", "신경과"), ("D004", "정신건강의학과"),
@@ -245,7 +247,38 @@ def update_er(refresh_base):
     order = {c: n for n, c in enumerate(ER_CITIES)}
     out.sort(key=lambda h: (order.get(h.get("city"), 9), h["name"]))
     write("er.json", {"updated": stamp(), "items": out})
+    # 병상 추이 기록 (화면의 작은 그래프용)
+    hist = read("er_history.json") or {}
+    hm = NOW.strftime("%H:%M")
+    for h in out:
+        v = h.get("b", {}).get("hvec")
+        if v is None:
+            continue
+        arr = hist.get(h["id"], [])
+        if not arr or arr[-1][0] != hm:
+            arr.append([hm, v])
+        hist[h["id"]] = arr[-HIST_KEEP:]
+    write("er_history.json", hist)
     log(f"응급실 {len(out)}곳")
+
+
+def update_aed():
+    """자동심장충격기(AED) 위치. API 활용신청 전이면 실패하고 건너뜀."""
+    items, _ = fetch_list(AED)
+    out = []
+    for i in items:
+        name = i.get("org") or i.get("buildPlace") or ""
+        if not name:
+            continue
+        p = {"name": name, "place": i.get("buildPlace", ""),
+             "addr": " ".join((i.get("buildAddress") or "").split()),
+             "tel": i.get("clerkTel") or i.get("managerTel") or ""}
+        out.append(coord(i, p))
+    if not out:
+        raise RuntimeError("AED 0건")
+    out.sort(key=lambda p: p["name"])
+    write("aed.json", {"updated": stamp(), "items": out})
+    log(f"AED {len(out)}곳")
 
 
 def main():
@@ -256,6 +289,11 @@ def main():
         jobs.append(("약국", update_pharmacy))
     if due_hours("hospital.json"):
         jobs.append(("병·의원", update_hospital))
+    if daily:
+        try:
+            update_aed()
+        except Exception as e:  # AED는 선택 기능: 실패해도 전체 결과에 영향 없음
+            log(f"AED 건너뜀: {e}")
     for name, fn in jobs:
         try:
             fn()

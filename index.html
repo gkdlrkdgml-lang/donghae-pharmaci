@@ -12,18 +12,18 @@
   --bg:#eef1f4; --panel:#ffffff; --ink:#0d141c; --muted:#3b4754; --line:#c9d1da;
   --accent:#0b5cad; --open:#12805c; --soon:#b86e00; --closed:#8a94a0; --danger:#c62f2f;
   --bar:#e3e8ee; --barfill:#9fd3bd; --now:#d23b2f; --mapbg:#e6ecf1;
-  --c-duty:#7a3fc4; --c-ph:#15965e; --c-hp:#1f63d1; --c-er:#d42a2a; --c-off:#98a2ad;
+  --c-duty:#7a3fc4; --maybe:#9a6500; --c-aed:#e8590c; --c-ph:#15965e; --c-hp:#1f63d1; --c-er:#d42a2a; --c-off:#98a2ad;
   --f-body:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   --f-mono:ui-monospace,"SFMono-Regular",Consolas,"D2Coding",monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0f1720; --panel:#17212c; --ink:#f3f6f9; --muted:#b8c4d0; --line:#324252;
   --accent:#5aa2ea; --open:#3cc58f; --soon:#f0a53a; --closed:#6f7c89; --danger:#ff6b5e;
-  --bar:#223040; --barfill:#1f6b52; --now:#ff6b5e; --mapbg:#121c26; color-scheme:dark}}
+  --maybe:#e6b84a; --bar:#223040; --barfill:#1f6b52; --now:#ff6b5e; --mapbg:#121c26; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1720; --panel:#17212c; --ink:#f3f6f9; --muted:#b8c4d0; --line:#324252;
   --accent:#5aa2ea; --open:#3cc58f; --soon:#f0a53a; --closed:#6f7c89; --danger:#ff6b5e;
-  --bar:#223040; --barfill:#1f6b52; --now:#ff6b5e; --mapbg:#121c26; color-scheme:dark}
+  --maybe:#e6b84a; --bar:#223040; --barfill:#1f6b52; --now:#ff6b5e; --mapbg:#121c26; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;font-weight:500}
 [hidden]{display:none!important}
@@ -91,6 +91,26 @@ button.stat{cursor:pointer}
 .tag.ov{color:#fff;font-weight:800}.tag.duty{background:var(--c-duty);border-color:var(--c-duty)}.tag.off{background:var(--c-off);border-color:var(--c-off)}
 .caution{font-size:14px;font-weight:700;line-height:1.5;color:#7a4a00;background:#fff4d6;border:1px solid #f0b429;border-radius:6px;padding:8px 10px}
 .caution b{color:#b25e00}
+.tag.spc{color:#fff;background:var(--c-hp);border-color:var(--c-hp);font-weight:800}
+.dist{font-family:var(--f-mono);font-weight:800;color:var(--accent)}
+.stale{color:var(--danger);font-weight:800}
+.notice.bad{border-color:var(--danger);color:var(--danger)}
+.quick svg{width:15px;height:15px;vertical-align:-2px}
+.quick.sm{border-width:1px;border-color:var(--line);color:var(--ink);font-weight:700;font-size:13px;padding:6px 10px}
+.quick.sm[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.spark{display:block;width:120px;height:30px}
+.trend{font-size:12px;font-weight:700;color:var(--muted)}
+.tab[data-t=aed],.chip[data-l=aed]{--tc:var(--c-aed)}
+.me{width:16px;height:16px;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 0 0 2px #1a73e8}
+/* 상황판 모드 */
+body.board{font-size:19px}
+body.board .wrap{max-width:none;padding-inline:20px;padding-block:12px 12px;gap:10px}
+body.board .tools,body.board .hint,body.board .kidnote,body.board footer,body.board .ticks,body.board .depts,body.board .nlink,body.board .legend{display:none!important}
+body.board .main{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+body.board #map{height:calc(100vh - 300px);min-height:420px}
+body.board .list{max-height:calc(100vh - 250px);overflow:auto}
+body.board h1{font-size:36px}body.board .name{font-size:21px}body.board .stat .n{font-size:40px}
+body.board .clock .t{font-size:44px}
 .tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-weight:500}
 .meta{font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
 .tel{font-family:var(--f-mono);color:var(--ink);background:none;border:0;padding:0;cursor:pointer;font-size:13px}
@@ -125,6 +145,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
 .pin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .pin svg{transform:rotate(45deg);width:19px;height:19px;color:#fff}
 .pin.off{opacity:.9}
+.pin.est{opacity:.6}
 .sdot{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#f0a020;border:2px solid #fff}
 .pin.sel{border-color:#15202b;border-width:3px;transform:rotate(-45deg) scale(1.2)}
 .pinwrap{position:relative;width:34px;height:34px}
@@ -142,7 +163,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
       <h1>지금 문 연 <span class="k k-ph">약국</span><span class="sep">·</span><span class="k k-hp">병원</span><span class="sep">·</span><span class="k k-er">응급실</span></h1>
       </div>
     </div>
-    <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div></div>
+    <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div><button class="btn" id="board" style="margin-top:4px;font-size:12px;padding:3px 10px">상황판 모드</button></div>
   </header>
 
   <div class="notice" id="src">데이터를 불러오는 중입니다.</div>
@@ -151,6 +172,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
     <button class="tab" role="tab" data-t="ph" aria-selected="true"><span data-ic="ph"></span>약국 <span class="c" id="c-ph"></span></button>
     <button class="tab" role="tab" data-t="hp" aria-selected="false"><span data-ic="hp"></span>병·의원 <span class="c" id="c-hp"></span></button>
     <button class="tab" role="tab" data-t="er" aria-selected="false"><span data-ic="er"></span>응급실 <span class="c" id="c-er"></span></button>
+    <button class="tab" role="tab" data-t="aed" aria-selected="false" id="tab-aed" hidden><span data-ic="aed"></span>AED <span class="c" id="c-aed"></span></button>
     <div class="hint"><span data-ic="tap"></span>탭을 누르면 약국·병원·응급실 목록이 바뀝니다</div>
   </nav>
 
@@ -158,6 +180,9 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
 
   <div class="tools" id="tools">
     <input type="search" id="q" placeholder="이름·주소 검색">
+    <button class="quick sm" id="near" aria-pressed="false"><span data-ic="loc"></span> 내 위치 가까운 순</button>
+    <button class="quick sm" id="late" aria-pressed="false">밤 9시 이후</button>
+    <button class="quick sm" id="sun" aria-pressed="false">일요일 운영</button>
     <select id="dong" aria-label="행정동"></select>
     <button class="quick" id="kids" aria-pressed="false">지금 진료하는 소아청소년과</button>
     <select id="div" aria-label="종별"></select>
@@ -175,6 +200,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
           <button class="chip" data-l="ph" aria-pressed="true"><span data-ic="ph"></span>약국</button>
           <button class="chip" data-l="hp" aria-pressed="false"><span data-ic="hp"></span>병·의원</button>
           <button class="chip" data-l="er" aria-pressed="true"><span data-ic="er"></span>응급실</button>
+          <button class="chip" data-l="aed" aria-pressed="false" id="chip-aed" hidden><span data-ic="aed"></span>AED</button>
         </div>
         <div class="hint"><span data-ic="tap"></span>아이콘을 누르면 상세정보</div>
         <button class="btn" id="zfit" style="padding:4px 10px;font-size:12px">전체 보기</button>
@@ -189,7 +215,7 @@ footer{font-size:13px;font-weight:500;color:var(--muted);line-height:1.6}
   <footer>
     운영시간·가용병상은 각 기관이 국립중앙의료원(E-Gen)에 입력한 정보로, 실제와 다를 수 있습니다. 방문 전 반드시 전화로 확인하세요.<br>
     약국·병의원 운영시간은 1시간, 응급실 가용병상은 10분 간격으로 갱신되며 병원이 입력한 시각 기준입니다. 응급 상황에서는 119에 먼저 신고하세요.<br>
-    공휴일 당번약국: 휴일지킴이약국(www.pharm114.or.kr) · 출처: 국립중앙의료원 약국·병의원·응급의료기관 정보 조회 서비스(공공데이터포털) · 지도: 국토교통부 브이월드
+    공휴일 당번약국: 휴일지킴이약국(www.pharm114.or.kr) · 출처: 국립중앙의료원 약국·병의원·응급의료기관·자동심장충격기 정보 조회 서비스(공공데이터포털) · 지도: 국토교통부 브이월드
   </footer>
 </div>
 
@@ -212,6 +238,8 @@ const IC={
   dt:P(["M12 5.5c-1.074 -.586 -2.583 -1.5 -4 -1.5c-2.1 0 -4 1.247 -4 5c0 4.899 1.056 8.41 2.671 10.537c.573 .756 1.97 .521 2.567 -.236c.398 -.505 .819 -1.439 1.262 -2.801c.292 -.771 .892 -1.504 1.5 -1.5c.602 0 1.21 .737 1.5 1.5c.443 1.362 .864 2.295 1.262 2.8c.597 .759 2 .993 2.567 .237c1.615 -2.127 2.671 -5.637 2.671 -10.537c0 -3.74 -1.908 -5 -4 -5c-1.423 0 -2.92 .911 -4 1.5","M12 5.5l3 1.5"]),
   km:P(["M5 21c.5 -4.5 2.5 -8 7 -10","M9 18c6.218 0 10.5 -3.288 11 -12v-2h-4.014c-9 0 -11.986 4 -12 9c0 1 0 3 2 5h3l.014 0"]),
   tap:P(["M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5","M11 11.5v-2a1.5 1.5 0 0 1 3 0v2.5","M14 10.5a1.5 1.5 0 0 1 3 0v1.5","M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7l-.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47","M5 3l-1 -1","M4 7h-1","M14 3l1 -1","M15 6h1"]),
+  aed:P(["M19.5 13.572l-7.5 7.428l-2.896 -2.868m-6.117 -8.104a5 5 0 0 1 9.013 -3.022a5 5 0 1 1 7.5 6.572","M3 13h2l2 3l2 -6l1 3h3"]),
+  loc:P(["M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0","M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0","M12 2l0 2","M12 20l0 2","M20 12l2 0","M2 12l2 0"]),
   er:P(["M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0","M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0","M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5","M6 10h4m-2 -2v4"])
 };
 document.querySelectorAll("[data-ic]").forEach(e=>e.outerHTML=IC[e.dataset.ic]);
@@ -237,18 +265,19 @@ function status(p,d){
   const ov=ovFor(p,d),k=dayKey(d,$("#hol").checked),m=d.getHours()*60+d.getMinutes();
   if(ov&&ov.type==="휴무")return{st:"closed",today:null,open:null,k,m,ov};
   if(ov&&ov.type==="당번"&&ov.open&&ov.close)p=Object.assign({},p,{t:Object.assign({},p.t,{[k]:[String(ov.open).replace(":",""),String(ov.close).replace(":","")]})});
-  const today=span(p,k);
+  let today=span(p,k),est=false;
+  if(k===8&&!today){const w=span(p,d.getDay()||7);if(w){today=w;est=true}}   // 공휴일 시간 미등록 → 평소 요일 기준(확인 필요)
   const y=new Date(d);y.setDate(y.getDate()-1);const prev=span(p,dayKey(y,false));
   let open=null;
   if(prev&&prev[1]>1440&&m<prev[1]-1440)open=[prev[0]-1440,prev[1]-1440];
   if(today&&m>=today[0]&&m<today[1])open=today;
-  const st=!Object.keys(p.t||{}).length?"unk":open?(open[1]-m<=SOON?"soon":"open"):"closed";
-  return{st,today,open,k,m,ov};
+  const st=!Object.keys(p.t||{}).length?"unk":open?(est&&open===today?"maybe":open[1]-m<=SOON?"soon":"open"):"closed";
+  return{st,today,open,k,m,ov,est};
 }
 const DAYN={1:"월",2:"화",3:"수",4:"목",5:"금",6:"토",7:"일",8:"공휴일"};
-const COL={open:"var(--open)",soon:"var(--soon)",closed:"var(--closed)",unk:"var(--closed)",ok:"var(--open)",low:"var(--soon)",none:"var(--danger)"};
-const CV={open:"--open",soon:"--soon",closed:"--closed",unk:"--closed",ok:"--open",low:"--soon",none:"--danger"};
-const LAB={ph:{open:"영업중",soon:"마감임박",closed:"영업종료",unk:"정보없음"},hp:{open:"진료중",soon:"마감임박",closed:"진료종료",unk:"정보없음"}};
+const COL={maybe:"var(--maybe)",open:"var(--open)",soon:"var(--soon)",closed:"var(--closed)",unk:"var(--closed)",ok:"var(--open)",low:"var(--soon)",none:"var(--danger)"};
+const CV={maybe:"--maybe",open:"--open",soon:"--soon",closed:"--closed",unk:"--closed",ok:"--open",low:"--soon",none:"--danger"};
+const LAB={ph:{maybe:"영업 가능·전화 확인",open:"영업중",soon:"마감임박",closed:"영업종료",unk:"정보없음"},hp:{maybe:"진료 가능·전화 확인",open:"진료중",soon:"마감임박",closed:"진료종료",unk:"정보없음"}};
 const dongOf=a=>{const m=String(a||"").match(/\(([^()]*)\)\s*$/);if(m){const f=m[1].split(",")[0].trim();if(/동$/.test(f))return f}return "동 미표기"};
 const naver=p=>"https://map.naver.com/p/search/"+encodeURIComponent((p.city||"동해시")+" "+p.name);
 const erState=h=>{const v=h.b&&h.b.hvec;return v==null?"unk":v<=0?"none":v<=ER_WARN?"low":"ok"};
@@ -256,24 +285,43 @@ const erTime=s=>s&&s.length>=12?`${+s.slice(4,6)}/${+s.slice(6,8)} ${s.slice(8,1
 const TYPES={ph:"약국",hp:"병·의원",er:"응급실"};
 
 // ===== 데이터 =====
-const DATA={ph:[],hp:[],er:[]},UPD={};
-const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json"};
+const DATA={ph:[],hp:[],er:[],aed:[]},UPD={};let HIST={},BADGES=[];
+const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
-async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[]}}catch(e){}}
-async function loadAll(){await Promise.all(["ph","hp","er"].map(load).concat(loadOV()));initFilters();render()}
-async function loadER(){await load("er");render()}
+async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[]}}catch(e){}}
+async function loadHist(){try{const r=await fetch("er_history.json?t="+Date.now(),{cache:"no-store"});if(r.ok)HIST=await r.json()}catch(e){}}
+async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist()));initFilters();render()}
+async function loadER(){await Promise.all([load("er"),loadHist()]);render()}
+// 거리(m)
+let userPos=null,near=false,late=false,sun=false;
+function distM(p){if(!userPos||!p.lat)return null;const R=6371000,a=userPos[0]*Math.PI/180,b=p.lat*Math.PI/180,dl=(p.lon-userPos[1])*Math.PI/180;
+  const x=Math.sin((b-a)/2)**2+Math.cos(a)*Math.cos(b)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+const distTxt=m=>m==null?"":m<1000?Math.round(m/10)*10+"m":(m/1000).toFixed(1)+"km";
+const distTag=p=>near&&userPos&&p.lat?`<span class="dist">${distTxt(distM(p))}</span>`:"";
+const badgeFor=p=>BADGES.filter(b=>b&&b.name===p.name).map(b=>`<span class="tag spc">${esc(b.label)}</span>`).join("");
+const kst=s=>s?new Date(s.replace(" ","T")+":00+09:00").getTime():0;
+function erStale(b){if(!b||!b.hvidate||b.hvidate.length<12)return "";const s=b.hvidate;const t=new Date(`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(8,10)}:${s.slice(10,12)}:00+09:00`).getTime();
+  const m=Math.round((Date.now()-t)/60000);return m>60?`<span class="stale">입력 지연 ${m>=120?Math.floor(m/60)+"시간 ":""}${m>=120?m%60:m}분 — 전화 확인</span>`:""}
+function spark(id){const h=(HIST[id]||[]).filter(x=>x&&x[1]!=null).slice(-36);if(h.length<3)return "";
+  const v=h.map(x=>Math.max(0,x[1])),mx=Math.max(1,...v),W=120,H=30;
+  const pts=v.map((y,i)=>`${(i/(v.length-1)*W).toFixed(1)},${(H-3-y/mx*(H-6)).toFixed(1)}`).join(" ");
+  const diff=v[v.length-1]-v[Math.max(0,v.length-7)];
+  return `<div><svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted)"/><circle cx="${W}" cy="${(H-3-v[v.length-1]/mx*(H-6)).toFixed(1)}" r="3" fill="currentColor" style="color:var(--c-er)"/></svg><div class="trend">최근 ${h[0][0]}~${h[h.length-1][0]} · 1시간 전 대비 ${diff>0?"+":""}${diff}</div></div>`}
 
 // ===== 상태 =====
 let tab="ph",filter="all",selKey=null;
-const layers={ph:true,hp:false,er:true};
+const layers={ph:true,hp:false,er:true,aed:false};
 
-function rowsOf(t,d){return DATA[t].map(p=>({p,t,s:t==="er"?{st:erState(p)}:status(p,d),dong:dongOf(p.addr)}))}
+function rowsOf(t,d){return DATA[t].map(p=>({p,t,s:t==="er"?{st:erState(p)}:t==="aed"?{st:"open"}:status(p,d),dong:dongOf(p.addr)}))}
 function visible(t,d){
   const q=$("#q").value.trim(),dg=$("#dong").value,dv=$("#div").value,dp=$("#dept").value;
   return rowsOf(t,d).filter(r=>{
     if(t!==tab)return true;
-    if(t!=="er"&&filter!=="all"&&(filter==="closed"?!(r.s.st==="closed"||r.s.st==="unk"):r.s.st!==filter))return false;
+    if(t==="aed")return !q||(r.p.name+r.p.addr+(r.p.place||"")).includes(q);
+    if(t!=="er"&&filter!=="all"&&(filter==="closed"?!(r.s.st==="closed"||r.s.st==="unk"):filter==="open"?!(r.s.st==="open"||r.s.st==="maybe"):r.s.st!==filter))return false;
+    if(t!=="er"&&late&&!(r.s.today&&r.s.today[1]>=1260))return false;
+    if(t!=="er"&&sun&&!(r.p.t&&r.p.t["7"]))return false;
     if(t==="er"&&filter!=="all"&&r.s.st!==filter)return false;
     if(q&&!(r.p.name+r.p.addr).includes(q))return false;
     if(t!=="er"&&dg&&r.dong!==dg)return false;
@@ -296,12 +344,18 @@ function render(){
   const k=dayKey(d,$("#hol").checked);
   $("#clkd").textContent=ymd(d)+" ("+"일월화수목금토"[d.getDay()]+")"+(k===8?" · 공휴일 기준":"")+(simTime?" · 지정시각":"");
   const parts=[];if(UPD.ph)parts.push(`약국 ${UPD.ph}`);if(UPD.hp)parts.push(`병·의원 ${UPD.hp}`);if(UPD.er)parts.push(`응급실 ${UPD.er.slice(5)}`);
-  $("#src").textContent=parts.length?"자동 갱신 기준 — "+parts.join(" · "):"데이터를 불러오지 못했습니다. 잠시 후 새로고침하세요.";
-  ["ph","hp","er"].forEach(t=>$("#c-"+t).textContent=DATA[t].length||"");
+  const lag=[];if(UPD.er&&Date.now()-kst(UPD.er)>35*60000)lag.push("응급실");if(UPD.ph&&Date.now()-kst(UPD.ph)>3*3600000)lag.push("약국");if(UPD.hp&&Date.now()-kst(UPD.hp)>3*3600000)lag.push("병·의원");
+  $("#src").classList.toggle("bad",lag.length>0);
+  $("#src").textContent=parts.length?(lag.length?`⚠ 데이터 갱신 지연(${lag.join("·")}) — 표시된 정보가 오래됐을 수 있습니다. 전화로 확인하세요. · `:"자동 갱신 기준 — ")+parts.join(" · "):"데이터를 불러오지 못했습니다. 잠시 후 새로고침하세요.";
+  ["ph","hp","er","aed"].forEach(t=>$("#c-"+t).textContent=DATA[t].length||"");
+  const hasAed=DATA.aed.length>0;$("#tab-aed").hidden=!hasAed;$("#chip-aed").hidden=!hasAed;
+  const isAED=tab==="aed";
 
   // 탭별 필터 표시
   const isER=tab==="er";
-  $("#dong").hidden=isER;$("#hol").parentElement.hidden=isER;$("#sim").parentElement.hidden=isER;$("#now").hidden=isER;
+  const noT=isER||isAED;
+  $("#dong").hidden=noT;$("#hol").parentElement.hidden=noT;$("#sim").parentElement.hidden=noT;$("#now").hidden=noT;$("#late").hidden=noT;$("#sun").hidden=noT;
+  $("#near").setAttribute("aria-pressed",near);$("#late").setAttribute("aria-pressed",late);$("#sun").setAttribute("aria-pressed",sun);
   $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";$("#kidnote").hidden=tab!=="er";
   $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
   const dsel=$("#dong"),dcur=dsel.value,dongs=[...new Set(DATA[tab].map(p=>dongOf(p.addr)))].sort();
@@ -312,20 +366,22 @@ function render(){
   let tiles;
   if(isER){const sum=DATA.er.reduce((a,h)=>a+Math.max(0,(h.b&&h.b.hvec)||0),0);
     tiles=[["all","응급실",all.length,"var(--accent)"],["ok","가용병상 합계",sum,COL.ok],["low",`여유 적음(${ER_WARN} 이하)`,c.low||0,COL.low],["none","포화(0 이하)",c.none||0,COL.none]];}
-  else{const L=LAB[tab];tiles=[["all","전체",all.length,"var(--accent)"],["open",L.open,c.open||0,COL.open],["soon",L.soon,c.soon||0,COL.soon],["closed",L.closed,(c.closed||0)+(c.unk||0),COL.closed]];}
+  else if(isAED){tiles=[["all","자동심장충격기(AED)",all.length,"var(--c-aed)"]];}
+  else{const L=LAB[tab];tiles=[["all","전체",all.length,"var(--accent)"],["open",L.open+(c.maybe?` (+ 전화 확인 ${c.maybe}곳)`:""),c.open||0,COL.open],["soon",L.soon,c.soon||0,COL.soon],["closed",L.closed,(c.closed||0)+(c.unk||0),COL.closed]];}
   $("#summary").innerHTML=tiles.map(([f,l,n,col])=>(isER&&f==="ok")?
     `<div class="stat"><span class="n">${n}</span><span class="l"><span class="dot" style="background:${col}"></span>${l}</span></div>`:
     `<button class="stat" data-f="${f}" aria-pressed="${filter===f}"><span class="n">${n}</span><span class="l"><span class="dot" style="background:${col}"></span>${l}</span></button>`).join("");
 
   // 범례
   const typeLeg=`<span><i class="dot" style="background:var(--c-ph)"></i>약국</span><span><i class="dot" style="background:var(--c-hp)"></i>병·의원</span><span><i class="dot" style="background:var(--c-er)"></i>응급실</span><span><i class="dot" style="background:var(--c-off)"></i>운영 종료</span><span><i class="dot" style="background:#f0a020"></i>핀 위 주황 점 = 마감임박</span>`;
-  $("#legend").innerHTML=typeLeg+" "+`<span>응급실 핀 숫자 = 가용병상 (숫자 색: 초록 여유 · 주황 ${ER_WARN} 이하 · 빨강 포화)</span>`;
+  $("#legend").innerHTML=typeLeg+" "+(k===8?`<span>? = 공휴일 시간 미등록(평소 요일 기준, 전화 확인)</span>`:"")+`<span>응급실 핀 숫자 = 가용병상 (숫자 색: 초록 여유 · 주황 ${ER_WARN} 이하 · 빨강 포화)</span>`;
 
   // 목록
-  const order={open:0,soon:1,closed:2,unk:3,ok:0,low:1,none:2};
+  const order={open:0,soon:1,maybe:2,closed:3,unk:4,ok:0,low:1,none:2};
+  const dz=r=>{const m=distM(r.p);return m==null?1e12:m};
   const duty=r=>r.s.ov&&r.s.ov.type==="당번"?0:1;
-  const vis=visible(tab,d).sort((a,b)=>isER?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko"));
-  $("#list").innerHTML=vis.length?vis.map(r=>isER?erRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
+  const vis=visible(tab,d).sort((a,b)=>(near&&userPos)?dz(a)-dz(b):(isER||isAED)?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko"));
+  $("#list").innerHTML=vis.length?vis.slice(0,isAED?150:999).map(r=>isER?erRow(r):isAED?aedRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
 
   drawMap(d);showInfo(d);
 }
@@ -337,20 +393,25 @@ function hoursHtml(r,d){
   if(s.open&&s.open[0]<0)segs+=`<i style="left:0;width:${s.open[1]/14.4}%"></i>`;
   let sub="";if(s.today&&s.today[0]===0&&s.today[1]>=1440)sub="";else if(s.st==="open")sub=`${fmt(s.open[1])} 마감`;else if(s.st==="soon")sub=`${s.open[1]-s.m}분 후 마감`;else if(s.today&&s.m<s.today[0])sub=`${fmt(s.today[0])} 시작`;
   const nowPct=(d.getHours()*60+d.getMinutes())/14.4;
-  return `<div class="hours"><div class="txt"><span>${DAYN[s.k]} ${txt}</span><span>${sub}</span></div><div class="bar">${segs}<b style="left:${nowPct}%"></b></div><div class="ticks"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div></div>`;
+  const dlab=s.est?"일월화수목금토"[d.getDay()]+"요일 기준(공휴일 시간 미등록)":DAYN[s.k];
+  return `<div class="hours"><div class="txt"><span>${dlab} ${txt}</span><span>${sub}</span></div><div class="bar">${segs}<b style="left:${nowPct}%"></b></div><div class="ticks"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div></div>`;
 }
 function row(r,d){
   const p=r.p,t=r.t,ic=t==="ph"?IC.ph:IC[hpIcon(p)];
   const ov=r.s.ov,ovTag=ov?`<span class="tag ov ${ov.type==="당번"?"duty":"off"}">${ov.type==="당번"?"오늘 당번":"임시휴무"}</span>`:"";
-  const tags=ovTag+(t==="hp"?`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
+  const tags=ovTag+badgeFor(p)+(t==="hp"?`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
   const ovMemo=ov&&ov.memo?`<div class="depts" style="color:var(--c-duty)">${esc(ov.memo)}</div>`:"";
   const dep=t==="hp"&&p.d&&p.d.length?`<div class="depts">진료과목: ${esc(p.d.join(", "))}</div>`:"";
   const inf=p.inf?`<div class="depts">${esc(p.inf)}</div>`:"";
   return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:${COL[r.s.st]}">
     <div class="name">${ic}${esc(p.name)} <span class="pill">${LAB[t][r.s.st]}</span>${tags}</div>
-    <div class="meta"><span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
+    <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
     ${noteFor(p)}${hoursHtml(r,d)}${ovMemo}${dep}${inf}</article>`;
 }
+function aedRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:var(--c-aed)">
+    <div class="name">${IC.aed}${esc(p.name)}</div>
+    ${p.place?`<div class="depts" style="color:var(--ink)">설치 위치: ${esc(p.place)}</div>`:""}
+    <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`}
 function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
 function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
 function erRow(r){
@@ -358,7 +419,7 @@ function erRow(r){
   if(h.nort)return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:var(--c-off)">
     <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     ${noteFor(h)}<div class="warn" style="color:var(--muted)">실시간 병상 정보를 제공하지 않는 응급실입니다. 운영 여부는 전화로 확인하세요.</div>
-    <div class="meta">${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`;
+    <div class="meta">${distTag(h)}${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`;
   const over=b.hvec<0?`<div class="warn">과밀 +${-b.hvec} (병상보다 환자 많음)</div>`:"";
   const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hv10","소아 인공호흡기"],["hvincuayn","인큐베이터"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
   return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:${col}">
@@ -369,16 +430,17 @@ function erRow(r){
       <div class="bed"><span class="v">${erNum(b.hvgc)}</span><span class="k">입원실</span></div>
       <div class="bed"><span class="v">${erNum(b.hvoc)}</span><span class="k">수술실</span></div>
       <div class="bed"><span class="v">${b.hv28!=null?erNum(b.hv28):"–"}</span><span class="k">소아 응급</span></div>
-    </div>${over}${noteFor(h)}
+    </div>${spark(h.id)}${over}${noteFor(h)}
     ${eq?`<div class="equip">${eq}</div>`:""}
-    <div class="meta"><span>병원 입력 ${esc(erTime(b.hvidate))}</span>${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
+    <div class="meta">${distTag(h)}<span>병원 입력 ${esc(erTime(b.hvidate))}</span>${erStale(b)}${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
   </article>`;
 }
 
-function findSel(d){if(!selKey)return null;const t=selKey.slice(0,2);return rowsOf(t,d).find(r=>r.p._k===selKey)||null}
+function findSel(d){if(!selKey)return null;const t=selKey.startsWith("aed")?"aed":selKey.slice(0,2);return rowsOf(t,d).find(r=>r.p._k===selKey)||null}
 function showInfo(d){
   const box=$("#info"),r=findSel(d);if(!r){box.hidden=true;return}
   box.hidden=false;const p=r.p;
+  if(r.t==="aed"){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">AED</span></div>${p.place?`<div>설치 위치: ${esc(p.place)}</div>`:""}<div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${distTag(p)}${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"&&p.nort){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">${esc(p.cls||"")}</span></div>${noteFor(p)}<div>실시간 병상 정보 미제공 · 운영 여부는 전화로 확인하세요</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   const s=r.s,ht=s.today?(s.today[0]===0&&s.today[1]>=1440?`${DAYN[s.k]} 24시간`:`${DAYN[s.k]} ${fmt(s.today[0])}–${fmt(s.today[1])}`):"오늘 휴무/미등록";
@@ -387,23 +449,25 @@ function showInfo(d){
 
 // ===== 지도 =====
 let lmap=null,lgroup=null,fitted=false;
-function pinHtml(ic,color,sel,badge,bcol,off,soon){return `<div class="pinwrap"><div class="pin${sel?" sel":""}${off?" off":""}" style="background:${color}">${ic}</div>${badge!=null?`<div class="badge" style="color:${bcol}">${badge}</div>`:""}${soon?`<div class="sdot" title="마감임박"></div>`:""}</div>`}
+function pinHtml(ic,color,sel,badge,bcol,off,soon,est){return `<div class="pinwrap"><div class="pin${sel?" sel":""}${off?" off":""}${est?" est":""}" style="background:${color}">${ic}</div>${badge!=null?`<div class="badge" style="color:${bcol}">${badge}</div>`:""}${soon?`<div class="sdot" title="마감임박"></div>`:""}</div>`}
 function drawMap(d){
   if(!window.L){$("#map").innerHTML=`<div class="mapmsg">지도를 불러오지 못했습니다. 인터넷 연결을 확인하세요.</div>`;return}
   if(!lmap){lmap=L.map("map",{zoomControl:true});L.tileLayer(MAP_TILES,{minZoom:6,maxZoom:19,attribution:MAP_ATTR}).addTo(lmap);lgroup=L.layerGroup().addTo(lmap);lmap.setView([37.52,129.11],13)}
   lgroup.clearLayers();
   const pts=[];
-  ["hp","ph","er"].forEach(t=>{
+  if(userPos){lgroup.addLayer(L.marker(userPos,{icon:L.divIcon({html:'<div class="me"></div>',className:"",iconSize:[16,16],iconAnchor:[8,8]}),zIndexOffset:900,title:"내 위치"}))}
+  ["aed","hp","ph","er"].forEach(t=>{
     if(!(layers[t]||t===tab))return;
     visible(t,d).forEach(r=>{const p=r.p;if(!p.lat||!p.lon)return;
-      const sel=p._k===selKey,off=t!=="er"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
-      const ic=t==="ph"?IC.ph:t==="er"?IC.er:IC[hpIcon(p)];
-      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&p.nort)?"#b25e00":bcol;
-      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
-        zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:LAB[t][r.s.st]}`});
+      const sel=p._k===selKey,off=t!=="er"&&t!=="aed"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
+      const ic=t==="ph"?IC.ph:t==="er"?IC.er:t==="aed"?IC.aed:IC[hpIcon(p)];
+      const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":r.s.st==="maybe"?"?":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&p.nort)?"#b25e00":r.s.st==="maybe"?tok("--maybe"):bcol;
+      const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon",r.s.st==="maybe"),className:"",iconSize:[34,34],iconAnchor:[17,41]}),
+        zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:t==="aed"?"AED":LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);
     });
   });
+  if(!fitted&&near&&userPos){lmap.setView(userPos,15);fitted=true}
   if(!fitted&&pts.length){lmap.fitBounds(pts,{padding:[30,30],maxZoom:15});fitted=true}
 }
 function select(k,fromMap){
@@ -418,7 +482,8 @@ document.addEventListener("click",e=>{
   const tb=e.target.closest(".tab");if(tb){tab=tb.dataset.t;filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===tb));render();return}
   const ch=e.target.closest(".chip");if(ch){const l=ch.dataset.l;layers[l]=!layers[l];ch.setAttribute("aria-pressed",layers[l]);render();return}
   const st=e.target.closest("button.stat");if(st){filter=st.dataset.f;render();return}
-  const tel=e.target.closest(".tel");if(tel){navigator.clipboard?.writeText(tel.dataset.tel).then(()=>{tel.textContent="복사됨";setTimeout(render,900)}).catch(()=>{});return}
+  const tel=e.target.closest(".tel");if(tel&&matchMedia("(pointer:coarse)").matches){location.href="tel:"+tel.dataset.tel.replace(/[^0-9+]/g,"");return}
+  if(tel){navigator.clipboard?.writeText(tel.dataset.tel).then(()=>{tel.textContent="복사됨";setTimeout(render,900)}).catch(()=>{});return}
   if(e.target.closest("a"))return;
   const rw=e.target.closest(".row");if(rw){select(rw.dataset.k,false)}
 });
@@ -426,9 +491,25 @@ document.addEventListener("click",e=>{
 $("#sim").onchange=e=>{simTime=e.target.value?new Date(e.target.value).getTime():null;render()};
 $("#now").onclick=()=>{simTime=null;$("#sim").value="";render()};
 $("#kids").onclick=()=>{const on=$("#kids").getAttribute("aria-pressed")==="true";$("#dept").value=on?"":"소아청소년과";filter=on?"all":"open";fitted=false;render()};
+$("#near").onclick=()=>{
+  if(near){near=false;fitted=false;render();return}
+  const b=$("#near");if(!navigator.geolocation){b.lastChild.textContent=" 위치를 사용할 수 없습니다";return}
+  b.lastChild.textContent=" 위치 확인 중…";
+  navigator.geolocation.getCurrentPosition(pos=>{userPos=[pos.coords.latitude,pos.coords.longitude];near=true;fitted=false;b.lastChild.textContent=" 내 위치 가까운 순";render()},
+    ()=>{b.lastChild.textContent=" 위치 권한을 허용해 주세요"},{enableHighAccuracy:true,timeout:10000,maximumAge:60000})};
+$("#late").onclick=()=>{late=!late;fitted=false;render()};
+$("#sun").onclick=()=>{sun=!sun;fitted=false;render()};
+// 상황판 모드: 큰 글씨, 필터 숨김, 30초마다 탭 자동 전환 (#board 주소로 바로 열기 가능)
+let boardTimer=null;
+function setBoard(on){document.body.classList.toggle("board",on);$("#board").textContent=on?"일반 화면":"상황판 모드";
+  clearInterval(boardTimer);boardTimer=null;
+  if(on){const seq=["er","ph","hp"];boardTimer=setInterval(()=>{const i=seq.indexOf(tab);const nx=seq[(i+1)%seq.length];document.querySelector(`.tab[data-t=${nx}]`).click()},30000)}
+  try{history.replaceState(null,"",on?"#board":location.pathname+location.search)}catch(e){}
+  setTimeout(()=>{if(lmap){lmap.invalidateSize();fitted=false;render()}},100)}
+$("#board").onclick=()=>{const on=!document.body.classList.contains("board");setBoard(on);if(on)document.documentElement.requestFullscreen?.().catch(()=>{});else if(document.fullscreenElement)document.exitFullscreen?.()};
 $("#zfit").onclick=()=>{selKey=null;fitted=false;render()};
 
-render();loadAll();
+render();loadAll();if(location.hash==="#board")setBoard(true);
 setInterval(()=>{if(!simTime)render()},60000);   // 1분마다 영업 상태 재계산
 setInterval(()=>{loadOV().then(render)},10*60000);
 setInterval(loadER,5*60000);                      // 5분마다 응급실 병상 재조회
