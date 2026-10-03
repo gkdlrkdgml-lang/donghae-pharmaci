@@ -337,7 +337,7 @@ function visible(t,d){
     if(t==="aed")return !q||(r.p.name+r.p.addr+(r.p.place||"")).includes(q);
     if(t!=="er"&&filter!=="all"&&(filter==="closed"?!(r.s.st==="closed"||r.s.st==="unk"):filter==="open"?!(r.s.st==="open"||r.s.st==="maybe"):r.s.st!==filter))return false;
     if(t!=="er"&&late&&!(r.s.all||[]).some(x=>x[1]>=1260))return false;
-    if(t!=="er"&&sun&&!(r.p.t&&r.p.t["7"]))return false;
+    if(t!=="er"&&sun&&!fixSpans(r.p,7,ymd(d)).length)return false;
     if(t==="er"&&filter!=="all"&&r.s.st!==filter)return false;
     if(q&&!(r.p.name+r.p.addr).includes(q))return false;
     if(t!=="er"&&dg&&r.dong!==dg)return false;
