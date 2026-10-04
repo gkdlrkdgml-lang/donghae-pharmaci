@@ -2,7 +2,7 @@
 """
 동해시 의료기관 운영현황 데이터 갱신 (GitHub Actions 에서 10분마다 실행)
 
-- er.json        : 응급실 실시간 가용병상 (동해·삼척·강릉)  → 매 실행
+- er.json        : 응급실 실시간 가용병상 (동해·삼척·강릉 + 원거리 이송: 원주세브란스기독·춘천성심)  → 매 실행
 - pharmacy.json  : 약국 목록·운영시간·좌표                  → 하루 1회
 - hospital.json  : 병·의원 목록·운영시간·좌표·진료과목       → 하루 1회
 
@@ -28,6 +28,9 @@ NOW = datetime.now(KST)
 SIDO = "강원특별자치도"
 CITY = "동해시"
 ER_CITIES = ["동해시", "삼척시", "강릉시"]      # 응급실은 인근 시까지 함께 표시
+# 원거리 이송 병원: 해당 시의 응급실 중 아래 기관만 표시 (hpid: 응급의료기관 기관ID)
+ER_EXTRA = {"원주시": {"A2200001": "연세대학교원주세브란스기독병원"},
+            "춘천시": {"A2200013": "한림대학교춘천성심병원"}}
 HOURS_EVERY_MIN = 60                           # 약국·병의원 운영시간: 60분마다 새로 받음
 DAILY_EVERY_HOURS = 20                         # 진료과목·응급실 목록: 하루 1회(20시간 경과 시)
 
@@ -214,8 +217,21 @@ BED_FIELDS = ["hvec", "hvs01", "hvoc", "hvicc", "hvgc", "hvidate",
 def update_er(refresh_base):
     old = read("er.json") or {}
     base = {h["id"]: h for h in old.get("items", [])}
+    extra_ids = {i for ids in ER_EXTRA.values() for i in ids}
+    if any(i not in base or "lat" not in base[i] for i in extra_ids):
+        refresh_base = True      # 원거리 이송 병원이 새로 추가된 경우 목록부터 다시 받음
     if refresh_base or not base:
         base = {}
+        for city, ids in ER_EXTRA.items():
+            try:
+                for i in call_all(ER_LIST, {"Q0": SIDO, "Q1": city}):
+                    if i.get("hpid") in ids:
+                        base[i["hpid"]] = coord(i, {
+                            "id": i["hpid"], "name": i.get("dutyName", ""), "city": city, "far": 1,
+                            "cls": i.get("dutyEmclsName", ""), "addr": " ".join(i.get("dutyAddr", "").split()),
+                            "tel": i.get("dutyTel3") or i.get("dutyTel1", "")})
+            except Exception as e:      # 원거리 병원 조회 실패는 동해 인근 응급실 갱신에 영향 없음
+                log(f"{city} 응급실 목록 실패(건너뜀): {e}")
         for city in ER_CITIES:
             for i in call_all(ER_LIST, {"Q0": SIDO, "Q1": city}):
                 base[i.get("hpid")] = coord(i, {
@@ -226,6 +242,13 @@ def update_er(refresh_base):
     for city in ER_CITIES:
         for i in call_all(ER_RT, {"STAGE1": SIDO, "STAGE2": city}):
             beds[i.get("hpid")] = ({k: i[k] for k in BED_FIELDS if i.get(k, "") != ""}, city, i)
+    for city, ids in ER_EXTRA.items():
+        try:
+            for i in call_all(ER_RT, {"STAGE1": SIDO, "STAGE2": city}):
+                if i.get("hpid") in ids:
+                    beds[i["hpid"]] = ({k: i[k] for k in BED_FIELDS if i.get(k, "") != ""}, city, i)
+        except Exception as e:
+            log(f"{city} 응급실 병상 실패(건너뜀): {e}")
     out = []
     # 실시간 병상을 입력하지 않는 응급실(응급실운영신고기관 등)도 목록에 포함
     for hpid, h in base.items():
@@ -241,10 +264,12 @@ def update_er(refresh_base):
                 except ValueError:
                     b.pop(k)
         h["b"] = b
+        if hpid in extra_ids:
+            h["far"] = 1
         out.append(h)
     if not out:
         raise RuntimeError("응급실 0건")
-    order = {c: n for n, c in enumerate(ER_CITIES)}
+    order = {c: n for n, c in enumerate(ER_CITIES + list(ER_EXTRA))}
     out.sort(key=lambda h: (order.get(h.get("city"), 9), h["name"]))
     write("er.json", {"updated": stamp(), "items": out})
     # 병상 추이 기록 (화면의 작은 그래프용)

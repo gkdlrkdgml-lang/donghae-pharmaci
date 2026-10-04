@@ -603,13 +603,13 @@ function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
 function erRow(r){
   const h=r.p,b=h.b||{},col=COL[r.s.st];
   if(h.nort)return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:var(--c-off)">
-    <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
+    <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     ${noteFor(h)}<div class="warn" style="color:var(--muted)">실시간 병상 정보를 제공하지 않는 응급실입니다. 운영 여부는 전화로 확인하세요.</div>
     <div class="meta">${distTag(h)}${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`;
   const over=b.hvec<0?`<div class="warn">과밀 +${-b.hvec} (병상보다 환자 많음)</div>`:"";
   const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hv10","소아 인공호흡기"],["hvincuayn","인큐베이터"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
   return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:${col}">
-    <div class="name">${IC.er}${esc(h.name)} ${kidTag(b)}<span class="tag">${esc(h.city||"")}</span>${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
+    <div class="name">${IC.er}${esc(h.name)} ${kidTag(b)}<span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     <div class="beds">
       <div class="bed big"><span class="v">${erNum(b.hvec)}${b.hvs01!=null?` <small>/ ${b.hvs01}</small>`:""}</span><span class="k">응급실 가용</span></div>
       <div class="bed"><span class="v">${erNum(b.hvicc)}</span><span class="k">중환자실</span></div>
@@ -650,7 +650,7 @@ function drawMap(d){
       const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(erClosed(p)?"중단":p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":r.s.st==="maybe"?"?":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&erClosed(p))?"#c62828":(t==="er"&&p.nort)?"#b25e00":r.s.st==="maybe"?tok("--maybe"):bcol;
       const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon",r.s.st==="maybe"),className:"",iconSize:[36,36],iconAnchor:[18,43]}),
         zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:t==="aed"?"AED":LAB[t][r.s.st]}`});
-      m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab)pts.push([p.lat,p.lon]);
+      m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab&&!p.far)pts.push([p.lat,p.lon]);
     });
   });
   if(!fitted&&near&&userPos){lmap.setView(userPos,15);fitted=true}
