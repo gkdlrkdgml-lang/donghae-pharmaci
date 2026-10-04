@@ -423,7 +423,7 @@ function erClosed(p){const t=now().getTime();return ERC.find(c=>c&&c.name===p.na
 function erStopHtml(p){const t=now().getTime(),c=erClosed(p),up=ERC.filter(x=>x&&x.name===p.name&&erT(x.from)>t&&erT(x.from)-t<45*864e5).sort((a,b)=>erT(a.from)-erT(b.from));
   let h="";if(c)h+=`<div class="caution stop"><b>⛔ 응급실 운영 중단 중</b> ${erFmt(c.from)} ~ ${erFmt(c.to)} · 다른 응급실을 이용하세요</div>`;
   if(up.length)h+=`<div class="caution"><b>응급실 운영 중단 예정</b><br>${up.map(x=>erFmt(x.from)+" ~ "+erFmt(x.to)).join("<br>")}</div>`;return h}
-function noteFor(p){const n=NOTES.find(n=>n&&n.name===p.name&&(!n.tab||n.tab===p._t));return (p._t==="er"||p.er?erStopHtml(p):"")+(n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:"")}
+function noteFor(p){const _d=new Date(Date.now()+9*36e5).toISOString().slice(0,10);const n=NOTES.find(n=>n&&n.name===p.name&&(!n.tab||n.tab===p._t)&&(!n.to||_d<=n.to)&&(!n.from||_d>=n.from));return (p._t==="er"||p.er?erStopHtml(p):"")+(n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:"")}
 function ovFor(p,d){if(!OV.length||p._t==="er")return null;const ds=ymd(d);
   return OV.find(o=>o&&o.name===p.name&&(!o.addr||String(p.addr||"").includes(o.addr))&&
     ((o.date&&o.date===ds)||(o.from&&o.from<=ds&&ds<=(o.to||o.from))))||null}
