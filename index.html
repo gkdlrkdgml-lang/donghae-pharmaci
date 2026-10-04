@@ -7,6 +7,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <title>동해시 의료기관 운영현황</title>
 <meta name="theme-color" content="#0b3a66">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="동해시 의료기관">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* 상단 요약 → 탭(약국/병·의원/응급실) → 지도 + 목록 */
@@ -300,6 +307,13 @@ footer{font-size:12px;line-height:1.7;padding:4px 4px 0;border-top:1px solid var
 .leaflet-control-zoom a{border-radius:10px!important}
 .leaflet-bar{border:0!important;box-shadow:var(--shadow)!important;border-radius:12px!important;overflow:hidden}
 @media (prefers-reduced-motion:reduce){.tab,.stat,.row{transition:none}}
+.inst{display:flex;align-items:center;gap:10px;margin:10px 0;padding:11px 14px;border-radius:14px;background:#0b3a66;color:#fff;font-size:15px;font-weight:700;line-height:1.45}
+.inst[hidden]{display:none}
+.inst span{flex:1}
+.inst button{font:inherit;font-weight:800;border-radius:999px;padding:7px 14px;cursor:pointer;border:0}
+.inst .go{background:#fff;color:#0b3a66}
+.inst .x{background:transparent;color:#fff;padding:7px 8px;font-size:18px;line-height:1}
+body.board .inst{display:none}
 </style>
 </head>
 <body>
@@ -324,6 +338,7 @@ footer{font-size:12px;line-height:1.7;padding:4px 4px 0;border-top:1px solid var
     </div>
     <div class="q-res" id="q-res" hidden></div>
   </section>
+  <div class="inst" id="inst" hidden><span id="inst-t"></span><button class="go" id="inst-go" hidden>설치</button><button class="x" id="inst-x" aria-label="닫기">×</button></div>
   <a class="hnews" id="hnews" href="https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918" target="_blank" rel="noopener"><span class="hn-l">📢 보건소 새소식</span><span class="hn-new" id="hn-new" hidden>NEW</span><span class="hn-t" id="hn-t">동해시 보건소 공지사항 보기</span><span class="hn-go">›</span></a>
   <div class="notice" id="src">데이터를 불러오는 중입니다.</div>
 
@@ -748,6 +763,22 @@ function setBoard(on){document.body.classList.toggle("board",on);$("#board").tex
   setTimeout(()=>{if(lmap){lmap.invalidateSize();fitted=false;render()}},100)}
 $("#board").onclick=()=>{const on=!document.body.classList.contains("board");setBoard(on);if(on)document.documentElement.requestFullscreen?.().catch(()=>{});else if(document.fullscreenElement)document.exitFullscreen?.()};
 $("#zfit").onclick=()=>{selKey=null;fitted=false;render()};
+
+// ── 앱 설치(홈 화면에 추가) ──
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+(function(){
+  const box=$("#inst"),txt=$("#inst-t"),go=$("#inst-go");let ev=null;
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  let hid=false;try{hid=Date.now()-Number(localStorage.getItem("instHide")||0)<30*864e5}catch(e){}
+  if(standalone||hid)return;
+  $("#inst-x").onclick=()=>{box.hidden=true;try{localStorage.setItem("instHide",String(Date.now()))}catch(e){}};
+  addEventListener("beforeinstallprompt",e=>{e.preventDefault();ev=e;txt.textContent="📱 홈 화면에 앱으로 설치하면 바로 열 수 있습니다.";go.hidden=false;box.hidden=false});
+  go.onclick=async()=>{if(!ev)return;ev.prompt();try{await ev.userChoice}catch(e){}ev=null;box.hidden=true};
+  addEventListener("appinstalled",()=>{box.hidden=true});
+  const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(ios){const safari=!/CriOS|FxiOS|EdgiOS|KAKAOTALK|NAVER|Line\//.test(ua);
+    txt.textContent=safari?"📱 앱처럼 쓰려면: 아래 공유 버튼(□↑) → ‘홈 화면에 추가’를 누르세요.":"📱 앱처럼 쓰려면: Safari로 연 뒤 공유 버튼(□↑) → ‘홈 화면에 추가’를 누르세요.";box.hidden=false}
+})();
 
 render();loadAll();if(location.hash==="#board")setBoard(true);
 setInterval(()=>{if(!simTime)render()},60000);   // 1분마다 영업 상태 재계산
