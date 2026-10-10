@@ -196,5 +196,205 @@
       "from": "2026-10-27 08:30",
       "to": "2026-10-30 17:30"
     }
-  ]
+  ],
+  "안내_popups": "popups: 페이지를 열 때 띄우는 알림 이미지. image는 저장소에 올린 그림 파일 이름, from~to 기간에만 표시. 끝나면 줄을 지우거나 to 날짜를 지나면 자동으로 안 뜹니다. '오늘 하루 보지 않기'는 이용자 기기별로 적용됩니다.",
+  "popups": [
+    {
+      "id": "flu-2026",
+      "title": "2026-2027절기 인플루엔자(독감) 무료 예방접종 안내",
+      "image": "flu-2026.jpg",
+      "from": "2026-10-10",
+      "to": "2027-04-30"
+    }
+  ],
+  "안내_flu": "flu: 독감 무료 예방접종 지정의료기관. 병·의원 목록에 '💉 독감 무료접종' 표시와 필터 버튼이 생깁니다. kid=어린이, preg=임신부, old=어르신. to 날짜가 지나면 자동으로 사라집니다.",
+  "flu": {
+    "title": "2026-2027절기 인플루엔자(독감) 무료 예방접종",
+    "from": "2026-09-21",
+    "to": "2027-04-30",
+    "image": "flu-2026.jpg",
+    "text": "어린이(생후 6개월~14세)·임신부 9/21부터, 75세 이상 10/6부터, 70~74세 10/12부터, 65~69세 10/15부터 (2027.4.30.까지, 백신 소진 시 조기 종료). 보건소는 접종하지 않습니다. 신분증·산모수첩을 꼭 챙기시고, 방문 전 백신 보유 여부를 전화로 확인하세요. 문의: 동해시 보건소 033-539-8074",
+    "items": [
+      {
+        "name": "근로복지공단동해병원",
+        "old": true
+      },
+      {
+        "name": "글로리아산부인과의원",
+        "preg": true
+      },
+      {
+        "name": "꾸러기소아청소년과의원",
+        "kid": true,
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "누가이비인후과의원",
+        "kid": true,
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "동해요양병원",
+        "old": true
+      },
+      {
+        "name": "동해이레요양병원",
+        "old": true
+      },
+      {
+        "name": "동해튼튼마취통증의학과의원",
+        "old": true
+      },
+      {
+        "name": "동해프라임내과의원",
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "심내과의원",
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "아이맘산부인과의원",
+        "preg": true
+      },
+      {
+        "name": "열린이비인후과의원",
+        "kid": true,
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "윤이비인후과의원",
+        "kid": true,
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "의료법인동해동인병원",
+        "kid": true,
+        "old": true
+      },
+      {
+        "name": "이승재내과의원",
+        "old": true
+      },
+      {
+        "name": "이연수내과의원",
+        "old": true
+      },
+      {
+        "name": "이옥찬내과의원",
+        "old": true
+      },
+      {
+        "name": "조아가정의학과의원",
+        "old": true
+      },
+      {
+        "name": "탁내과의원",
+        "old": true
+      },
+      {
+        "name": "한소아과의원",
+        "kid": true
+      },
+      {
+        "name": "홍정안외과의원",
+        "old": true
+      },
+      {
+        "name": "Dr.하석우의한사랑의원",
+        "kid": true,
+        "old": true
+      },
+      {
+        "name": "더맑은신경과의원",
+        "old": true
+      },
+      {
+        "name": "동해금강의원",
+        "kid": true,
+        "old": true
+      },
+      {
+        "name": "동해정형외과의원",
+        "old": true
+      },
+      {
+        "name": "동해제일내과의원",
+        "old": true
+      },
+      {
+        "name": "서외과의원",
+        "old": true
+      },
+      {
+        "name": "신세계의원",
+        "old": true
+      },
+      {
+        "name": "신소아청소년과의원",
+        "kid": true
+      },
+      {
+        "name": "연세속이편한내과의원",
+        "kid": true,
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "연세진의원",
+        "old": true
+      },
+      {
+        "name": "이이비인후과의원",
+        "kid": true,
+        "preg": true,
+        "old": true
+      },
+      {
+        "name": "이재현내과의원",
+        "kid": true,
+        "old": true
+      },
+      {
+        "name": "임내과의원",
+        "old": true
+      },
+      {
+        "name": "성심의원",
+        "old": true
+      },
+      {
+        "name": "세종의원",
+        "old": true
+      },
+      {
+        "name": "연세의원",
+        "old": true
+      },
+      {
+        "name": "오형균정형외과의원",
+        "old": true
+      },
+      {
+        "name": "북평리안의원",
+        "kid": true,
+        "old": true
+      },
+      {
+        "name": "부곡의원",
+        "old": true
+      },
+      {
+        "name": "동해금강요양병원",
+        "old": true,
+        "inpatient": true
+      }
+    ]
+  }
 }

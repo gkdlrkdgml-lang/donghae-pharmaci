@@ -293,6 +293,11 @@ button.stat:hover{transform:translateY(-2px)}
 .q-act a.call{background:#0aa37f;border-color:#0aa37f;color:#fff}.q-act a.c119{background:#c62828;border-color:#c62828;color:#fff}
 body.board .qfind{display:none!important}
 @media (max-width:560px){.q-sits{grid-template-columns:repeat(2,1fr)}.q-main b{font-size:17px}}
+.tag.flu{background:#e8f1ff;color:#0b4fa0;border:1px solid #b9d3f5;font-weight:800}
+.quick.flu{border-color:#0b63c5;color:#0b63c5}.quick.flu[aria-pressed="true"]{background:#0b63c5;color:#fff}
+.flunote{border-radius:12px;background:#eef5ff;border:1px solid #c9dcf5;color:#12324f;padding:10px 14px;font-size:14px;font-weight:600;line-height:1.6}
+.flunote b{color:#0b4fa0}.flunote a{color:#0b63c5;font-weight:800}
+body.board .flunote{display:none!important}
 .caution.stop{background:#c62828;color:#fff;font-size:15px}
 .bed .v{font-size:22px;font-weight:800}
 .big .v{font-size:40px;letter-spacing:-.03em}
@@ -314,6 +319,16 @@ footer{font-size:12px;line-height:1.7;padding:4px 4px 0;border-top:1px solid var
 .inst .go{background:#fff;color:#0b3a66}
 .inst .x{background:transparent;color:#fff;padding:7px 8px;font-size:18px;line-height:1}
 body.board .inst{display:none}
+.pop{position:fixed;inset:0;z-index:3000;background:rgba(8,20,35,.62);display:flex;align-items:center;justify-content:center;padding:16px}
+.pop[hidden]{display:none}
+.pop-box{background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.pop-img{overflow:auto;-webkit-overflow-scrolling:touch;background:#f3f6fa}
+.pop-img img{display:block;width:100%;height:auto}
+.pop-zoom{font-size:13px;font-weight:700;color:#4a5b6d;text-align:center;padding:6px 10px 0}
+.pop-bar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #e3e9f0}
+.pop-bar button{flex:1;font:inherit;font-size:15px;font-weight:800;border-radius:10px;padding:11px 8px;cursor:pointer;border:1px solid #d3dce6;background:#fff;color:#12324f}
+.pop-bar .pop-close{background:#0b63c5;border-color:#0b63c5;color:#fff}
+body.board .pop{display:none!important}
 </style>
 </head>
 <body>
@@ -338,6 +353,11 @@ body.board .inst{display:none}
     </div>
     <div class="q-res" id="q-res" hidden></div>
   </section>
+  <div class="pop" id="pop" role="dialog" aria-modal="true" aria-label="알림" hidden><div class="pop-box">
+    <div class="pop-img"><a id="pop-a" target="_blank" rel="noopener"><img id="pop-i" alt=""></a></div>
+    <div class="pop-zoom">이미지를 누르면 크게 볼 수 있습니다</div>
+    <div class="pop-bar"><button class="pop-today" id="pop-today">오늘 하루 보지 않기</button><button class="pop-close" id="pop-close">닫기</button></div>
+  </div></div>
   <div class="inst" id="inst" hidden><span id="inst-t"></span><button class="go" id="inst-go" hidden>설치</button><button class="x" id="inst-x" aria-label="닫기">×</button></div>
   <a class="hnews" id="hnews" href="https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918" target="_blank" rel="noopener"><span class="hn-l">📢 보건소 새소식</span><span class="hn-new" id="hn-new" hidden>NEW</span><span class="hn-t" id="hn-t">동해시 보건소 공지사항 보기</span><span class="hn-go">›</span></a>
   <div class="notice" id="src">데이터를 불러오는 중입니다.</div>
@@ -359,6 +379,7 @@ body.board .inst{display:none}
     <button class="quick sm" id="sun" aria-pressed="false">일요일 운영</button>
     <select id="dong" aria-label="행정동"></select>
     <button class="quick" id="kids" aria-pressed="false">지금 진료하는 소아청소년과</button>
+    <button class="quick flu" id="flu" aria-pressed="false" hidden>💉 독감 무료접종 기관</button>
     <select id="div" aria-label="종별"></select>
     <select id="dept" aria-label="진료과목"></select>
     <label><input type="checkbox" id="hol"> 공휴일로 판정</label>
@@ -366,6 +387,7 @@ body.board .inst{display:none}
     <button class="btn" id="now">현재시각</button>
   </div>
 
+  <div class="flunote" id="flunote" hidden></div>
   <div class="kidnote" id="kidnote" hidden>밤·휴일에 아이가 아플 때: 가벼운 증상은 병·의원 탭의 <b>지금 진료하는 소아청소년과</b>를, 응급 상황은 아래 응급실의 <b>소아 응급병상</b>을 확인하세요. 소아 전용병상 표시가 없어도 응급실은 소아 환자를 진료하지만, 소아 전문 진료 가능 여부는 전화로 먼저 확인하세요.</div>
   <div class="main">
     <section class="mapwrap" aria-label="위치 지도">
@@ -526,6 +548,7 @@ function visible(t,d){
     if(t!=="er"&&dg&&r.dong!==dg)return false;
     if(t==="hp"&&dv&&r.p.div!==dv)return false;
     if(t==="hp"&&dp&&!(r.p.d||[]).includes(dp))return false;
+    if(t==="hp"&&fluOn&&!fluInfo(r.p))return false;
     return true;
   });
 }
@@ -555,7 +578,9 @@ function render(){
   const noT=isER||isAED;
   $("#dong").hidden=noT;$("#hol").parentElement.hidden=noT;$("#sim").parentElement.hidden=noT;$("#now").hidden=noT;$("#late").hidden=noT;$("#sun").hidden=noT;
   $("#near").setAttribute("aria-pressed",near);$("#late").setAttribute("aria-pressed",late);$("#sun").setAttribute("aria-pressed",sun);
-  $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";$("#kidnote").hidden=tab!=="er";
+  $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
+    const fn=$("#flunote");fn.hidden=!(tab==="hp"&&fluOn&&fa);if(!fn.hidden)fn.innerHTML=`<b>💉 ${esc(FLU.title||"독감 무료 예방접종")}</b><br>${esc(FLU.text||"")}${FLU.image?` <a href="${esc(FLU.image)}" target="_blank" rel="noopener">안내문 보기 ↗</a>`:""}`}
+  $("#kidnote").hidden=tab!=="er";
   $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
   const dsel=$("#dong"),dcur=dsel.value,dongs=[...new Set(DATA[tab].map(p=>dongOf(p.addr)))].sort();
   dsel.innerHTML=`<option value="">전체 동</option>`+dongs.map(x=>`<option${x===dcur?" selected":""}>${esc(x)}</option>`).join("");
@@ -600,7 +625,7 @@ function hoursHtml(r,d){
 function row(r,d){
   const p=r.p,t=r.t,ic=t==="ph"?IC.ph:IC[hpIcon(p)];
   const ov=r.s.ov,ovTag=ov?`<span class="tag ov ${ov.type==="당번"?"duty":"off"}">${ov.type==="당번"?"오늘 당번":"임시휴무"}</span>`:"";
-  const tags=ovTag+badgeFor(p)+(t==="hp"?`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
+  const tags=ovTag+badgeFor(p)+(t==="hp"?fluTag(p)+`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
   const ovMemo=ov&&ov.memo?`<div class="depts" style="color:var(--c-duty)">${esc(ov.memo)}</div>`:"";
   const dep=t==="hp"&&p.d&&p.d.length?`<div class="depts">진료과목: ${esc(p.d.join(", "))}</div>`:"";
   const inf=p.inf?`<div class="depts">${esc(p.inf)}</div>`:"";
@@ -645,7 +670,7 @@ function showInfo(d){
   if(r.t==="er"&&p.nort){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">${esc(p.cls||"")}</span></div>${noteFor(p)}<div>실시간 병상 정보 미제공 · 운영 여부는 전화로 확인하세요</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   const s=r.s,ht=s.today?`${DAYN[s.k]} `+((s.all&&s.all.length)?s.all:[s.today]).map(([o,c])=>(o===0&&c>=1440)?"24시간":`${fmt(o)}–${fmt(c)}`).join(" · ")+(s.fx?" (보건소 안내 기준)":""):"오늘 휴무/미등록";
-  box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}</div>${noteFor(p)}<div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
+  box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}${r.t==="hp"?fluTag(p):""}</div>${noteFor(p)}<div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
 }
 
 // ===== 지도 =====
@@ -783,6 +808,28 @@ if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceW
 render();loadAll();if(location.hash==="#board")setBoard(true);
 setInterval(()=>{if(!simTime)render()},60000);   // 1분마다 영업 상태 재계산
 setInterval(()=>{loadOV().then(render)},10*60000);
+// ── 알림 팝업(duty.json의 popups) ──
+let popShown=false;
+// ── 독감 무료접종 지정의료기관(duty.json의 flu) ──
+var FLU=null,fluOn=false;
+function fluInfo(p){if(!FLU||!Array.isArray(FLU.items))return null;const d=ymd(now());if((FLU.from&&d<FLU.from)||(FLU.to&&d>FLU.to))return null;return FLU.items.find(x=>x&&x.name===p.name)||null}
+function fluTag(p){const f=fluInfo(p);if(!f)return "";const w=[f.kid&&"어린이",f.preg&&"임신부",f.old&&"어르신"].filter(Boolean).join("·");return `<span class="tag flu">💉 독감 무료접종 ${w}${f.inpatient?"(입원환자)":""}</span>`}
+async function loadFlu(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();FLU=j.flu||null;render()}}catch(e){}}
+$("#flu").onclick=()=>{fluOn=!fluOn;fitted=false;render()};
+loadFlu();setInterval(loadFlu,10*60000);
+async function showPopup(){if(popShown||document.body.classList.contains("board"))return;
+  let j;try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;j=await r.json()}catch(e){return}
+  const today=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+  const p=(Array.isArray(j.popups)?j.popups:[]).find(p=>{if(!p||!p.image||(p.from&&today<p.from)||(p.to&&today>p.to))return false;
+    let h=null;try{h=localStorage.getItem("popHide:"+(p.id||p.image))}catch(e){}return h!==today});
+  if(!p)return;popShown=true;
+  const box=$("#pop");$("#pop-i").src=p.image;$("#pop-i").alt=p.title||"알림";$("#pop-a").href=p.link||p.image;box.setAttribute("aria-label",p.title||"알림");box.hidden=false;
+  const close=()=>{box.hidden=true};
+  $("#pop-close").onclick=close;box.onclick=e=>{if(e.target===box)close()};
+  $("#pop-today").onclick=()=>{try{localStorage.setItem("popHide:"+(p.id||p.image),today)}catch(e){}close()};
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+}
+showPopup();
 loadNews();setInterval(loadNews,15*60000);setInterval(showNews,6000);
 setInterval(loadER,5*60000);                      // 5분마다 응급실 병상 재조회
 setInterval(loadAll,15*60000);                    // 15분마다 약국·병의원 재조회(서버는 1시간마다 갱신)
