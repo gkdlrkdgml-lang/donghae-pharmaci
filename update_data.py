@@ -364,7 +364,7 @@ SHORT_OPS = ["getMdcinSuplyLackList01", "getMdcinSuplyLackList03", "getMdcinSupl
 def update_shortage():
     """식약처 의약품 공급부족 정보(전국). 6시간마다, 실패해도 무시. 기능 이름을 모르는 경우 후보를 차례로 시도."""
     old = read("shortage.json") or {}
-    if old.get("updated"):
+    if old.get("updated") and "total" in old:   # 예전 형식 파일이면 바로 새로 받음
         try:
             last = datetime.strptime(old["updated"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
             if NOW - last < timedelta(hours=6):
