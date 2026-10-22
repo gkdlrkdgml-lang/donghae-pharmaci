@@ -357,7 +357,7 @@ def update_notice():
 
 
 SHORT = "https://apis.data.go.kr/1471000/MdcinSuplyLackService03/"
-SHORT_OPS = ["getMdcinSuplyLackList03", "getMdcinSuplyLackInq03", "getMdcinSuplyLackInfoList03", "getMdcinSuplyLackInfo03",
+SHORT_OPS = ["getMdcinSuplyLackList01", "getMdcinSuplyLackList03", "getMdcinSuplyLackInq03", "getMdcinSuplyLackInfoList03", "getMdcinSuplyLackInfo03",
              "getMdcinSuplyLackList", "getMdcinSuplyLackInq", "getMdcinSuplyLackInfoInq03", "getMdcinSuplyLackDtlList03"]
 
 
