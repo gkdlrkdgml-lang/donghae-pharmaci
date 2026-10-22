@@ -379,8 +379,21 @@ def update_shortage():
         except Exception as e:
             errs.append(f"{op}: {str(e)[:80]}")
             continue
-        write("shortage.json", {"updated": stamp(), "op": op, "items": items})
-        log(f"의약품 공급부족 {len(items)}건 ({op})")
+        today = NOW.strftime("%Y%m%d")
+        since = (NOW - timedelta(days=730)).strftime("%Y%m%d")
+        cur = []
+        for i in items:
+            if i.get("REPORT_PGS_CODE") in ("삭제", "취하"):
+                continue
+            plan = (i.get("SUPPLY_PLAN_DATE") or "").strip()
+            if (i.get("REPORT_DATE") or "") < since or (plan and plan < today):
+                continue          # 오래된 신고·이미 정상화 예정일이 지난 건은 제외
+            cur.append({"item": i.get("ITEM_NAME", ""), "entp": i.get("ENTP_NAME", ""), "short": i.get("SHORT_SUPPLY_EXPT_DATE", ""),
+                        "plan": plan, "reason": (i.get("SHORT_SUPPLY_REASON") or "")[:300], "alt": (i.get("TREATMENT_INFU") or "")[:300],
+                        "report": i.get("REPORT_DATE", "")})
+        cur.sort(key=lambda x: x["report"], reverse=True)
+        write("shortage.json", {"updated": stamp(), "op": op, "total": len(items), "items": cur})
+        log(f"의약품 공급부족 현재 {len(cur)}건 / 전체 {len(items)}건 ({op})")
         return
     raise RuntimeError("모든 후보 실패 " + " | ".join(errs)[:400])
 
