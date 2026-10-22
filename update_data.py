@@ -39,6 +39,7 @@ PHARM = API + "ErmctInsttInfoInqireService/getParmacyListInfoInqire"
 HOSP = API + "HsptlAsembySearchService/getHsptlMdcncListInfoInqire"
 ER_RT = API + "ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire"
 ER_LIST = API + "ErmctInfoInqireService/getEgytListInfoInqire"
+ER_SRS = API + "ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire"   # 중증질환자 수용가능 정보(같은 응급의료정보 서비스)
 AED = API + "AEDInfoInqireService/getEgytAedManageInfoInqire"   # 활용신청: 국립중앙의료원_전국 자동심장충격기(AED) 정보 조회 서비스
 HIST_KEEP = 36   # 응급실 병상 추이 보관 개수(10분 간격 × 36 = 6시간)
 
@@ -355,6 +356,55 @@ def update_notice():
     log(f"보건소 새소식 {len(items)}건")
 
 
+SHORT = "https://apis.data.go.kr/1471000/MdcinSuplyLackService03/"
+SHORT_OPS = ["getMdcinSuplyLackList03", "getMdcinSuplyLackInq03", "getMdcinSuplyLackInfoList03", "getMdcinSuplyLackInfo03",
+             "getMdcinSuplyLackList", "getMdcinSuplyLackInq", "getMdcinSuplyLackInfoInq03", "getMdcinSuplyLackDtlList03"]
+
+
+def update_shortage():
+    """식약처 의약품 공급부족 정보(전국). 6시간마다, 실패해도 무시. 기능 이름을 모르는 경우 후보를 차례로 시도."""
+    old = read("shortage.json") or {}
+    if old.get("updated"):
+        try:
+            last = datetime.strptime(old["updated"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
+            if NOW - last < timedelta(hours=6):
+                return
+        except Exception:
+            pass
+    ops = ([old["op"]] if old.get("op") else []) + [o for o in SHORT_OPS if o != old.get("op")]
+    errs = []
+    for op in ops:
+        try:
+            items = call_all(SHORT + op, {})
+        except Exception as e:
+            errs.append(f"{op}: {str(e)[:80]}")
+            continue
+        write("shortage.json", {"updated": stamp(), "op": op, "items": items})
+        log(f"의약품 공급부족 {len(items)}건 ({op})")
+        return
+    raise RuntimeError("모든 후보 실패 " + " | ".join(errs)[:400])
+
+
+def update_srsill():
+    """응급실별 중증질환 수용 가능 여부. 받은 항목을 그대로 저장(화면 반영 전 항목 확인용). 실패해도 무시."""
+    out, errs = {}, []
+    cities = list(ER_CITIES) + list(ER_EXTRA)
+    for city in cities:
+        try:
+            for i in call_all(ER_SRS, {"STAGE1": SIDO, "STAGE2": city}):
+                hid = i.get("hpid") or i.get("dutyName")
+                if city in ER_EXTRA and i.get("hpid") not in ER_EXTRA[city]:
+                    continue
+                if hid:
+                    out[hid] = dict(i, city=city)
+        except Exception as e:
+            errs.append(f"{city}: {e}")
+    if not out:
+        raise RuntimeError("중증질환 수용가능 0건 " + "; ".join(errs)[:300])
+    write("srsill.json", {"updated": stamp(), "items": list(out.values()), "errors": errs})
+    log(f"중증질환 수용가능 {len(out)}곳")
+
+
 def main():
     ok, fail = 0, 0
     daily = due("hospital.json") or due("pharmacy.json")
@@ -368,6 +418,14 @@ def main():
             update_aed()
         except Exception as e:  # AED는 선택 기능: 실패해도 전체 결과에 영향 없음
             log(f"AED 건너뜀: {e}")
+    try:
+        update_shortage()
+    except Exception as e:  # 선택 기능: 실패해도 영향 없음
+        log(f"의약품 공급부족 건너뜀: {e}")
+    try:
+        update_srsill()
+    except Exception as e:  # 선택 기능: 실패해도 영향 없음
+        log(f"중증질환 수용가능 건너뜀: {e}")
     try:
         update_notice()
     except Exception as e:  # 선택 기능: 실패해도 영향 없음
