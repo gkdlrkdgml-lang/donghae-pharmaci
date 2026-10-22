@@ -111,6 +111,10 @@ button.stat{cursor:pointer}
 .spark{display:block;width:120px;height:30px}
 .trend{font-size:12px;font-weight:700;color:var(--muted)}
 .tab[data-t=aed],.chip[data-l=aed]{--tc:var(--c-aed)}.chip[data-l=otc]{--tc:#5b6b7c}
+.srs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px;font-size:13px}.srs>b{font-size:13px;margin-right:4px}
+.srs-c{padding:3px 8px;border-radius:999px;background:#e9f7ef;color:#11663f;font-weight:700}.srs-c.no{background:#f4f4f4;color:#888;text-decoration:line-through}
+.srs-c small{font-weight:600;opacity:.8}.srs-none{color:var(--muted);font-weight:600}
+body.board .srs{display:none}
 .otcpin{width:22px;height:22px;border-radius:7px;background:#5b6b7c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}.otcpin svg{width:13px;height:13px;color:#fff;stroke:#fff}
 .q-card.otc{--c:#5b6b7c}
 .me{width:16px;height:16px;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 0 0 2px #1a73e8}
@@ -516,8 +520,8 @@ function showNews(){if(!NEWS.length)return;const n=NEWS[newsI%NEWS.length];newsI
   $("#hn-new").hidden=!(n.date&&(Date.now()-new Date(n.date+"T00:00:00+09:00").getTime())<3*864e5)}
 async function loadNews(){try{const r=await fetch("notice.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();NEWS=(j.items||[]).slice(0,5);newsI=0;showNews()}}catch(e){}}
 async function loadOTC(){try{const r=await fetch("otc.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OTC=Array.isArray(j.items)?j.items:[];$("#chip-otc").hidden=!OTC.length}}catch(e){}}
-async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist(),loadOTC()));initFilters();render()}
-async function loadER(){await Promise.all([load("er"),loadHist()]);render()}
+async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist(),loadOTC(),loadSRS()));initFilters();render()}
+async function loadER(){await Promise.all([load("er"),loadHist(),loadSRS()]);render()}
 // 거리(m)
 let userPos=null,near=false,late=false,sun=false;
 function distM(p){if(!userPos||!p.lat)return null;const R=6371000,a=userPos[0]*Math.PI/180,b=p.lat*Math.PI/180,dl=(p.lon-userPos[1])*Math.PI/180;
@@ -644,11 +648,23 @@ function aedRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel"
     <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`}
 function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
 function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
+// 중증 응급질환 수용 가능(병원 입력, 국립중앙의료원)
+let SRS={},SRS_T="";
+const SRS_N={1:"심근경색 재관류",2:"뇌경색 재관류",3:"거미막하출혈 수술",4:"뇌출혈 수술",5:"흉부 대동맥",6:"복부 대동맥",7:"담낭질환",8:"담도질환",9:"복부 응급수술",
+ 10:"영유아 장중첩·폐색",11:"성인 위장관 내시경",12:"영유아 위장관 내시경",13:"성인 기관지 내시경",14:"영유아 기관지 내시경",15:"저체중 출생아",16:"분만",17:"산과 수술",18:"부인과 수술",
+ 19:"중증 화상",20:"수족지 접합",21:"사지 접합(수족지 외)",22:"응급 투석(HD)",23:"응급 투석(CRRT)",24:"정신과 폐쇄병동",25:"응급 안과수술",26:"성인 혈관중재",27:"영유아 혈관중재"};
+const SRS_ORDER=[1,2,4,3,5,6,26,9,16,17,18,15,10,12,14,27,11,13,22,23,19,20,21,25,24,7,8];
+async function loadSRS(){try{const r=await fetch("srsill.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();SRS={};(j.items||[]).forEach(i=>{if(i.hpid)SRS[i.hpid]=i});SRS_T=j.updated||""}}catch(e){}}
+function srsHtml(h){const i=SRS[h.id];if(!i)return "";
+  const yes=SRS_ORDER.filter(n=>i["MKioskTy"+n]==="Y"),no=SRS_ORDER.filter(n=>i["MKioskTy"+n]==="불가능");
+  if(!yes.length&&!no.length)return `<div class="srs"><b>중증 응급질환</b> <span class="srs-none">병원이 수용 가능 정보를 입력하지 않았습니다 · 전화 확인</span></div>`;
+  const chip=(n,ok)=>{const m=i["MKioskTy"+n+"Msg"];return `<span class="srs-c${ok?"":" no"}"${m?` title="${esc(m)}"`:""}>${ok?"○":"✕"} ${SRS_N[n]}${m?` <small>(${esc(m)})</small>`:""}</span>`};
+  return `<div class="srs"><b>중증 응급질환 수용</b>${yes.map(n=>chip(n,true)).join("")}${no.map(n=>chip(n,false)).join("")}</div>`}
 function erRow(r){
   const h=r.p,b=h.b||{},col=COL[r.s.st];
   if(h.nort)return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:var(--c-off)">
     <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
-    ${noteFor(h)}<div class="warn" style="color:var(--muted)">실시간 병상 정보를 제공하지 않는 응급실입니다. 운영 여부는 전화로 확인하세요.</div>
+    ${noteFor(h)}<div class="warn" style="color:var(--muted)">실시간 병상 정보를 제공하지 않는 응급실입니다. 운영 여부는 전화로 확인하세요.</div>${srsHtml(h)}
     <div class="meta">${distTag(h)}${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`;
   const over=b.hvec<0?`<div class="warn">과밀 +${-b.hvec} (병상보다 환자 많음)</div>`:"";
   const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hv10","소아 인공호흡기"],["hvincuayn","인큐베이터"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
@@ -661,7 +677,7 @@ function erRow(r){
       <div class="bed"><span class="v">${erNum(b.hvoc)}</span><span class="k">수술실</span></div>
       <div class="bed"><span class="v">${b.hv28!=null?erNum(b.hv28):"–"}</span><span class="k">소아 응급</span></div>
     </div>${spark(h.id)}${over}${noteFor(h)}
-    ${eq?`<div class="equip">${eq}</div>`:""}
+    ${eq?`<div class="equip">${eq}</div>`:""}${srsHtml(h)}
     <div class="meta">${distTag(h)}<span>병원 입력 ${esc(erTime(b.hvidate))}</span>${erStale(b)}${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
   </article>`;
 }
