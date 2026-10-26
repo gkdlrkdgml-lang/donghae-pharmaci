@@ -113,6 +113,7 @@ button.stat{cursor:pointer}
 .tab[data-t=aed],.chip[data-l=aed]{--tc:var(--c-aed)}.chip[data-l=otc]{--tc:#5b6b7c}
 .short{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}.short summary{cursor:pointer;font-weight:800;font-size:15px}
 .short-note{font-size:13px;color:var(--muted);font-weight:600;margin:8px 0}.short-i{border-top:1px solid var(--line);padding:8px 0;font-size:14px}.short-i b{font-size:15px}
+.otc-i{cursor:pointer}.otc-i:hover b{text-decoration:underline}.otc-i .q-act{margin-top:4px}
 .short-i .m{color:var(--muted);font-size:13px;font-weight:600}.short-i .a{font-size:13px;margin-top:3px}
 body.board .short{display:none!important}
 .srs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px;font-size:13px}.srs>b{font-size:13px;margin-right:4px}
@@ -398,6 +399,7 @@ body.board .pop{display:none!important}
   </div>
 
   <div class="flunote" id="flunote" hidden></div>
+  <details class="short" id="otcbox" hidden><summary id="otc-s">🏪 상비약 판매 편의점</summary><div class="short-note">약국이 문을 닫았을 때 해열진통제·감기약·소화제·파스 등 안전상비의약품을 살 수 있는 곳입니다. 영업시간은 업소마다 다르니 전화로 확인하세요.</div><div id="otc-l"></div></details>
   <details class="short" id="short" hidden><summary id="short-s">💊 공급 부족 의약품(식약처)</summary><div class="short-note">제약사가 식약처에 신고한 전국 공급 부족 의약품입니다. 대부분 병원에서 쓰는 전문의약품이며, 처방약이 해당되면 병원·약국에 대체약을 문의하세요.</div><div id="short-l"></div></details>
   <div class="kidnote" id="kidnote" hidden>밤·휴일에 아이가 아플 때: 가벼운 증상은 병·의원 탭의 <b>지금 진료하는 소아청소년과</b>를, 응급 상황은 아래 응급실의 <b>소아 응급병상</b>을 확인하세요. 소아 전용병상 표시가 없어도 응급실은 소아 환자를 진료하지만, 소아 전문 진료 가능 여부는 전화로 먼저 확인하세요.</div>
   <div class="main">
@@ -528,6 +530,13 @@ let SHORT=[];const ymdK=v=>v&&v.length===8?v.slice(0,4)+"."+(+v.slice(4,6))+"."+
 async function loadShort(){try{const r=await fetch("shortage.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();SHORT=Array.isArray(j.items)?j.items:[];
   $("#short-s").textContent=`💊 공급 부족 의약품(식약처) ${SHORT.length}건 — 눌러서 보기`;
   $("#short-l").innerHTML=SHORT.map(x=>`<div class="short-i"><b>${esc(x.item)}</b><div class="m">${esc(x.entp)} · 부족 예상 ${ymdK(x.short)||"-"} · 정상화 예정 ${ymdK(x.plan)||"미정"}</div>${x.alt?`<div class="a">대체·영향: ${esc(x.alt.replace(/\s+/g," ").slice(0,140))}${x.alt.length>140?"…":""}</div>`:""}</div>`).join("")+(j.updated?`<div class="short-note">식약처 의약품공급부족 정보 · ${esc(j.updated)} 갱신</div>`:"")}catch(e){}}
+function drawOTCList(){const rows=OTC.map(p=>({p,m:distM(p)})).sort((a,b)=>(near&&userPos)?(a.m??1e12)-(b.m??1e12):a.p.name.localeCompare(b.p.name,"ko"));
+  $("#otc-s").textContent=`🏪 상비약 판매 편의점 ${OTC.length}곳 — 눌러서 보기`+((near&&userPos)?" (가까운 순)":"");
+  $("#otc-l").innerHTML=rows.map(({p,m},i)=>{const tel=(p.tel||"").replace(/[^0-9]/g,"");return `<div class="short-i otc-i" data-otc="${OTC.indexOf(p)}"><b>${esc(p.name)}</b>${m!=null&&near?` <span class="q-d">${distTxt(m)}</span>`:""}<div class="m">${esc(p.addr)}</div>
+   <div class="q-act">${tel?`<a class="call" href="tel:${tel}">📞 ${esc(p.tel)}</a>`:""}<a href="https://map.naver.com/p/search/${encodeURIComponent("동해시 "+p.name)}" target="_blank" rel="noopener">길찾기</a>${p.lat?`<button data-otcmap="${OTC.indexOf(p)}">지도에서 보기</button>`:""}</div></div>`}).join("")}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-otcmap]");if(!b)return;const p=OTC[+b.dataset.otcmap];if(!p||!lmap)return;
+  layers.otc=true;const c=$("#chip-otc");if(c)c.setAttribute("aria-pressed","true");render();lmap.setView([p.lat,p.lon],17);$("#map").scrollIntoView({behavior:"smooth",block:"center"});
+  setTimeout(()=>{lgroup.eachLayer(l=>{const ll=l.getLatLng&&l.getLatLng();if(ll&&Math.abs(ll.lat-p.lat)<1e-7&&Math.abs(ll.lng-p.lon)<1e-7&&l.openPopup)l.openPopup()})},350)});
 async function loadOTC(){try{const r=await fetch("otc.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OTC=Array.isArray(j.items)?j.items:[];$("#chip-otc").hidden=!OTC.length}}catch(e){}}
 async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist(),loadOTC(),loadSRS(),loadShort()));initFilters();render()}
 async function loadER(){await Promise.all([load("er"),loadHist(),loadSRS()]);render()}
@@ -599,7 +608,7 @@ function render(){
   $("#near").setAttribute("aria-pressed",near);$("#late").setAttribute("aria-pressed",late);$("#sun").setAttribute("aria-pressed",sun);
   $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
     const fn=$("#flunote");fn.hidden=!(tab==="hp"&&fluOn&&fa);if(!fn.hidden)fn.innerHTML=`<b>💉 ${esc(FLU.title||"독감 무료 예방접종")}</b><br>${esc(FLU.text||"")}${FLU.image?` <a href="${esc(FLU.image)}" target="_blank" rel="noopener">안내문 보기 ↗</a>`:""}`}
-  $("#kidnote").hidden=tab!=="er";$("#short").hidden=tab!=="ph"||!SHORT.length;
+  $("#kidnote").hidden=tab!=="er";$("#short").hidden=tab!=="ph"||!SHORT.length;$("#otcbox").hidden=tab!=="ph"||!OTC.length;if(!$("#otcbox").hidden)drawOTCList();
   $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
   const dsel=$("#dong"),dcur=dsel.value,dongs=[...new Set(DATA[tab].map(p=>dongOf(p.addr)))].sort();
   dsel.innerHTML=`<option value="">전체 동</option>`+dongs.map(x=>`<option${x===dcur?" selected":""}>${esc(x)}</option>`).join("");
