@@ -406,7 +406,7 @@ body.board .pop{display:none!important}
         <div class="layers" id="layers">
           <button class="chip" data-l="ph" aria-pressed="true"><span data-ic="ph"></span>약국</button>
           <button class="chip" data-l="hp" aria-pressed="false"><span data-ic="hp"></span>병·의원</button>
-          <button class="chip" data-l="er" aria-pressed="true"><span data-ic="er"></span>응급실</button>
+          <button class="chip" data-l="er" aria-pressed="false"><span data-ic="er"></span>응급실</button>
           <button class="chip" data-l="aed" aria-pressed="false" id="chip-aed" hidden><span data-ic="aed"></span>AED</button>
           <button class="chip" data-l="otc" aria-pressed="false" id="chip-otc" hidden><span data-ic="ph"></span>상비약 편의점</button>
         </div>
@@ -549,7 +549,9 @@ function spark(id){const h=(HIST[id]||[]).filter(x=>x&&x[1]!=null).slice(-36);if
 
 // ===== 상태 =====
 let tab="ph",filter="all",selKey=null;
-const layers={ph:true,hp:false,er:true,aed:false,otc:false};let OTC=[];
+const layers={ph:true,hp:false,er:false,aed:false,otc:false};
+// 위쪽 탭을 바꾸면 지도도 그 종류만 표시(아래 지도 버튼으로 다른 종류를 겹쳐 볼 수 있음)
+function syncLayers(t){Object.keys(layers).forEach(k=>layers[k]=k===t);document.querySelectorAll(".chip[data-l]").forEach(c=>c.setAttribute("aria-pressed",!!layers[c.dataset.l]))}let OTC=[];
 
 function rowsOf(t,d){return DATA[t].map(p=>({p,t,s:t==="er"?{st:erState(p)}:t==="aed"?{st:"open"}:status(p,d),dong:dongOf(p.addr)}))}
 function visible(t,d){
@@ -621,7 +623,8 @@ function render(){
   const order={open:0,soon:1,maybe:2,closed:3,unk:4,ok:0,low:1,none:2};
   const dz=r=>{const m=distM(r.p);return m==null?1e12:m};
   const duty=r=>r.s.ov&&r.s.ov.type==="당번"?0:1;
-  const vis=visible(tab,d).sort((a,b)=>(near&&userPos)?dz(a)-dz(b):(isER||isAED)?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko"));
+  const pp=r=>(tab==="hp"&&$("#dept").value==="소아청소년과"&&isPedSpec(r.p))?0:1;
+  const vis=visible(tab,d).sort((a,b)=>pp(a)-pp(b)||((near&&userPos)?dz(a)-dz(b):(isER||isAED)?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko")));
   $("#list").innerHTML=vis.length?vis.slice(0,isAED?150:999).map(r=>isER?erRow(r):isAED?aedRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
 
   drawMap(d);showInfo(d);
@@ -736,7 +739,7 @@ function select(k,fromMap){
 
 // ===== 이벤트 =====
 document.addEventListener("click",e=>{
-  const tb=e.target.closest(".tab");if(tb){tab=tb.dataset.t;filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===tb));render();return}
+  const tb=e.target.closest(".tab");if(tb){tab=tb.dataset.t;syncLayers(tab);filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===tb));render();return}
   const ch=e.target.closest(".chip");if(ch){const l=ch.dataset.l;layers[l]=!layers[l];ch.setAttribute("aria-pressed",layers[l]);render();return}
   const st=e.target.closest("button.stat");if(st){filter=st.dataset.f;render();return}
   const tel=e.target.closest(".tel");if(tel&&matchMedia("(pointer:coarse)").matches){location.href="tel:"+tel.dataset.tel.replace(/[^0-9+]/g,"");return}
@@ -761,7 +764,8 @@ function setPos(pos){const c=pos.coords,p=[c.latitude,c.longitude],sv=userPos;us
 // ── 빠른 찾기(가까운 곳·상황별) ──
 let quickKind=null;
 const isOpenRow=r=>["open","soon","maybe"].includes(r.s.st);
-function setTab(t){tab=t;filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t))}
+function setTab(t){tab=t;syncLayers(t);filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t))}
+const isPedSpec=p=>/소아/.test(p.name)||((p.d||[]).length===1&&p.d[0]==="소아청소년과");
 function nearRows(t,pred,n){return rowsOf(t,now()).filter(r=>r.p.lat&&pred(r)).map(r=>({r,m:distM(r.p)})).sort((a,b)=>(a.m??1e12)-(b.m??1e12)).slice(0,n||1)}
 function qCard(label,x){const r=x.r,p=r.p,t=r.t;let st;
   if(t==="er"){const b=p.b||{};st=p.nort?"실시간 병상 정보 없음 · 전화 확인":`응급실 병상 ${erNum(b.hvec)}`+(b.hv28>0?` · 소아 ${b.hv28}`:"")}
@@ -785,9 +789,11 @@ function drawQuick(){
     cards=[...(a[0]?[a[0]]:[qNone("지금 문 연 약국이 없습니다. 가까운 편의점에서 상비약(해열제·감기약 등)을 살 수 있습니다."),...otcCards(1)]),h[0]||qNone("지금 진료 중인 병·의원이 없습니다"),...er(1)]}
   else if(k==="med"){title="지금 문 연 약국";const a=ph(2);cards=a.length?a:[qNone("지금 문 연 약국이 없습니다. 아래 편의점에서 안전상비의약품(해열제·감기약·소화제·파스)을 살 수 있고, 급하시면 응급실을 이용하세요."),...otcCards(2),...er(1)]}
   else if(k==="hosp"){title="지금 진료 중인 병·의원";const h=hp(2).map(x=>qCard("병·의원",x));cards=h.length?h:[qNone("지금 진료 중인 병·의원이 없습니다. 급하시면 응급실을 이용하세요."),...er(1)]}
-  else if(k==="kid"){title="아이가 아플 때";const h=hp(2,r=>(r.p.d||[]).includes("소아청소년과")).map(x=>qCard("소아청소년과",x));
-    cards=[...(h.length?h:[qNone("지금 진료 중인 소아청소년과가 없습니다. 아래 응급실로 전화 후 방문하세요.")]),...er(1)];
-    extra="응급실은 소아 전용병상 표시가 없어도 소아 환자를 진료합니다. 방문 전 전화로 확인하세요."}
+  else if(k==="kid"){title="아이가 아플 때";const sp=hp(2,r=>isPedSpec(r.p)).map(x=>qCard("소아청소년과",x));
+    const ot=hp(2,r=>!isPedSpec(r.p)&&(r.p.d||[]).includes("소아청소년과")).map(x=>qCard("소아 진료 가능 의원",x));
+    if(sp.length||ot.length){cards=[...(sp.length?sp:[qNone("지금 진료 중인 소아청소년과가 없어, 소아 진료가 가능한 가까운 의원을 안내합니다.")]),...ot]}
+    else{cards=[qNone("지금 진료 중인 소아청소년과·소아 진료 의원이 없습니다. 아래 응급실로 전화 후 방문하세요."),...er(2)];
+      extra="응급실은 소아 전용병상 표시가 없어도 소아 환자를 진료합니다. 방문 전 전화로 확인하세요."}}
   else{title="응급 상황";cards=er(2);extra="의식이 없거나 숨쉬기 힘들면 바로 119에 전화하세요."}
   box.hidden=false;
   box.innerHTML=`<div class="q-head"><span>${title}</span><span class="q-act">${k==="emer"||k==="kid"?`<a class="c119" href="tel:119">📞 119</a>`:""}<button class="q-x" id="q-x">닫기 ✕</button></span></div>
