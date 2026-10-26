@@ -540,6 +540,7 @@ function drawOTCList(){const rows=OTC.map(p=>({p,m:distM(p)})).sort((a,b)=>(near
   $("#otc-l").innerHTML=rows.map(({p,m},i)=>{const tel=(p.tel||"").replace(/[^0-9]/g,"");return `<div class="short-i otc-i" data-otc="${OTC.indexOf(p)}"><b>${esc(p.name)}</b>${m!=null&&near?` <span class="q-d">${distTxt(m)}</span>`:""}<div class="m">${esc(p.addr)}</div>
    <div class="q-act">${tel?`<a class="call" href="tel:${tel}">📞 ${esc(p.tel)}</a>`:""}<a href="https://map.naver.com/p/search/${encodeURIComponent("동해시 "+p.name)}" target="_blank" rel="noopener">길찾기</a>${p.lat?`<button data-otcmap="${OTC.indexOf(p)}">지도에서 보기</button>`:""}</div></div>`}).join("")}
 
+const SHOW_DEPTS=false;  // 병·의원 목록의 진료과목 줄 표시(숨김: false, 보이기: true)
 const SHOW_OTC=false;   // 상비약 편의점 표시(잠시 숨김: false → 다시 보이려면 true)
 async function loadOTC(){if(!SHOW_OTC){DATA.otc=[];OTC=[];$("#chip-otc").hidden=true;return}await load("otc");OTC=DATA.otc;$("#chip-otc").hidden=!OTC.length}
 async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist(),loadOTC(),loadSRS(),loadShort()));initFilters();render()}
@@ -664,8 +665,8 @@ function row(r,d){
   const ov=r.s.ov,ovTag=ov?`<span class="tag ov ${ov.type==="당번"?"duty":"off"}">${ov.type==="당번"?"오늘 당번":"임시휴무"}</span>`:"";
   const tags=ovTag+badgeFor(p)+(t==="hp"?fluTag(p)+`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
   const ovMemo=ov&&ov.memo?`<div class="depts" style="color:var(--c-duty)">${esc(ov.memo)}</div>`:"";
-  const dep=t==="hp"&&p.d&&p.d.length?`<div class="depts">진료과목: ${esc(p.d.join(", "))}</div>`:"";
-  const inf=p.inf?`<div class="depts">${esc(p.inf)}</div>`:"";
+  const dep=SHOW_DEPTS&&t==="hp"&&p.d&&p.d.length?`<div class="depts">진료과목: ${esc(p.d.join(", "))}</div>`:"";
+  const inf=SHOW_DEPTS&&p.inf?`<div class="depts">${esc(p.inf)}</div>`:"";
   return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:${COL[r.s.st]}">
     <div class="name">${ic}${esc(p.name)} <span class="pill">${LAB[t][r.s.st]}</span>${tags}</div>
     <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
