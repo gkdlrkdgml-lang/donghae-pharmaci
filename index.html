@@ -110,7 +110,7 @@ button.stat{cursor:pointer}
 .quick.sm[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .spark{display:block;width:120px;height:30px}
 .trend{font-size:12px;font-weight:700;color:var(--muted)}
-.tab[data-t=aed],.chip[data-l=aed]{--tc:var(--c-aed)}.chip[data-l=otc]{--tc:#5b6b7c}
+.tab[data-t=aed],.chip[data-l=aed]{--tc:var(--c-aed)}:root{--c-otc:#5b6b7c}.chip[data-l=otc],.tab[data-t=otc]{--tc:#5b6b7c}
 .short{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}.short summary{cursor:pointer;font-weight:800;font-size:15px}
 .short-note{font-size:13px;color:var(--muted);font-weight:600;margin:8px 0}.short-i{border-top:1px solid var(--line);padding:8px 0;font-size:14px}.short-i b{font-size:15px}
 .otc-i{cursor:pointer}.otc-i:hover b{text-decoration:underline}.otc-i .q-act{margin-top:4px}
@@ -378,6 +378,7 @@ body.board .pop{display:none!important}
     <button class="tab" role="tab" data-t="hp" aria-selected="false"><span data-ic="hp"></span>병·의원 <span class="c" id="c-hp"></span></button>
     <button class="tab" role="tab" data-t="er" aria-selected="false"><span data-ic="er"></span>응급실 <span class="c" id="c-er"></span></button>
     <button class="tab" role="tab" data-t="aed" aria-selected="false" id="tab-aed" hidden><span data-ic="aed"></span>AED <span class="c" id="c-aed"></span></button>
+    <button class="tab" role="tab" data-t="otc" aria-selected="false" id="tab-otc" hidden><span data-ic="ph"></span>상비약 편의점 <span class="c" id="c-otc"></span></button>
     <div class="hint"><span data-ic="tap"></span>탭을 누르면 목록이 바뀝니다</div>
   </nav>
 
@@ -399,6 +400,7 @@ body.board .pop{display:none!important}
   </div>
 
   <div class="flunote" id="flunote" hidden></div>
+  <div class="flunote" id="otcnote" hidden>🏪 약국이 문을 닫았을 때 <b>해열진통제·감기약·소화제·파스</b> 등 안전상비의약품을 살 수 있는 편의점입니다. 영업시간은 업소마다 다르니 전화로 확인하세요. (인허가 자료 기준)</div>
   <details class="short" id="otcbox" hidden><summary id="otc-s">🏪 상비약 판매 편의점</summary><div class="short-note">약국이 문을 닫았을 때 해열진통제·감기약·소화제·파스 등 안전상비의약품을 살 수 있는 곳입니다. 영업시간은 업소마다 다르니 전화로 확인하세요.</div><div id="otc-l"></div></details>
   <details class="short" id="short" hidden><summary id="short-s">💊 공급 부족 의약품(식약처)</summary><div class="short-note">제약사가 식약처에 신고한 전국 공급 부족 의약품입니다. 대부분 병원에서 쓰는 전문의약품이며, 처방약이 해당되면 병원·약국에 대체약을 문의하세요.</div><div id="short-l"></div></details>
   <div class="kidnote" id="kidnote" hidden>밤·휴일에 아이가 아플 때: 가벼운 증상은 병·의원 탭의 <b>지금 진료하는 소아청소년과</b>를, 응급 상황은 아래 응급실의 <b>소아 응급병상</b>을 확인하세요. 소아 전용병상 표시가 없어도 응급실은 소아 환자를 진료하지만, 소아 전문 진료 가능 여부는 전화로 먼저 확인하세요.</div>
@@ -516,8 +518,8 @@ const erTime=s=>s&&s.length>=12?`${+s.slice(4,6)}/${+s.slice(6,8)} ${s.slice(8,1
 const TYPES={ph:"약국",hp:"병·의원",er:"응급실"};
 
 // ===== 데이터 =====
-const DATA={ph:[],hp:[],er:[],aed:[]},UPD={};let HIST={},BADGES=[];
-const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json"};
+const DATA={ph:[],hp:[],er:[],aed:[],otc:[]},UPD={};let HIST={},BADGES=[];
+const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json",otc:"otc.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
 async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[]}}catch(e){}}
@@ -534,10 +536,8 @@ function drawOTCList(){const rows=OTC.map(p=>({p,m:distM(p)})).sort((a,b)=>(near
   $("#otc-s").textContent=`🏪 상비약 판매 편의점 ${OTC.length}곳 — 눌러서 보기`+((near&&userPos)?" (가까운 순)":"");
   $("#otc-l").innerHTML=rows.map(({p,m},i)=>{const tel=(p.tel||"").replace(/[^0-9]/g,"");return `<div class="short-i otc-i" data-otc="${OTC.indexOf(p)}"><b>${esc(p.name)}</b>${m!=null&&near?` <span class="q-d">${distTxt(m)}</span>`:""}<div class="m">${esc(p.addr)}</div>
    <div class="q-act">${tel?`<a class="call" href="tel:${tel}">📞 ${esc(p.tel)}</a>`:""}<a href="https://map.naver.com/p/search/${encodeURIComponent("동해시 "+p.name)}" target="_blank" rel="noopener">길찾기</a>${p.lat?`<button data-otcmap="${OTC.indexOf(p)}">지도에서 보기</button>`:""}</div></div>`}).join("")}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-otcmap]");if(!b)return;const p=OTC[+b.dataset.otcmap];if(!p||!lmap)return;
-  layers.otc=true;const c=$("#chip-otc");if(c)c.setAttribute("aria-pressed","true");render();lmap.setView([p.lat,p.lon],17);$("#map").scrollIntoView({behavior:"smooth",block:"center"});
-  setTimeout(()=>{lgroup.eachLayer(l=>{const ll=l.getLatLng&&l.getLatLng();if(ll&&Math.abs(ll.lat-p.lat)<1e-7&&Math.abs(ll.lng-p.lon)<1e-7&&l.openPopup)l.openPopup()})},350)});
-async function loadOTC(){try{const r=await fetch("otc.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OTC=Array.isArray(j.items)?j.items:[];$("#chip-otc").hidden=!OTC.length}}catch(e){}}
+
+async function loadOTC(){await load("otc");OTC=DATA.otc;$("#chip-otc").hidden=!OTC.length}
 async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist(),loadOTC(),loadSRS(),loadShort()));initFilters();render()}
 async function loadER(){await Promise.all([load("er"),loadHist(),loadSRS()]);render()}
 // 거리(m)
@@ -562,12 +562,12 @@ const layers={ph:true,hp:false,er:false,aed:false,otc:false};
 // 위쪽 탭을 바꾸면 지도도 그 종류만 표시(아래 지도 버튼으로 다른 종류를 겹쳐 볼 수 있음)
 function syncLayers(t){Object.keys(layers).forEach(k=>layers[k]=k===t);document.querySelectorAll(".chip[data-l]").forEach(c=>c.setAttribute("aria-pressed",!!layers[c.dataset.l]))}let OTC=[];
 
-function rowsOf(t,d){return DATA[t].map(p=>({p,t,s:t==="er"?{st:erState(p)}:t==="aed"?{st:"open"}:status(p,d),dong:dongOf(p.addr)}))}
+function rowsOf(t,d){return DATA[t].map(p=>({p,t,s:t==="er"?{st:erState(p)}:(t==="aed"||t==="otc")?{st:"open"}:status(p,d),dong:dongOf(p.addr)}))}
 function visible(t,d){
   const q=$("#q").value.trim(),dg=$("#dong").value,dv=$("#div").value,dp=$("#dept").value;
   return rowsOf(t,d).filter(r=>{
     if(t!==tab)return true;
-    if(t==="aed")return !q||(r.p.name+r.p.addr+(r.p.place||"")).includes(q);
+    if(t==="aed"||t==="otc")return !q||(r.p.name+r.p.addr+(r.p.place||"")).includes(q);
     if(t!=="er"&&filter!=="all"&&(filter==="closed"?!(r.s.st==="closed"||r.s.st==="unk"):filter==="open"?!(r.s.st==="open"||r.s.st==="maybe"):r.s.st!==filter))return false;
     if(t!=="er"&&late&&!(r.s.all||[]).some(x=>x[1]>=1260))return false;
     if(t!=="er"&&sun&&!fixSpans(r.p,7,ymd(d)).length)return false;
@@ -597,9 +597,9 @@ function render(){
   const lag=[];if(UPD.er&&Date.now()-kst(UPD.er)>35*60000)lag.push("응급실");if(UPD.ph&&Date.now()-kst(UPD.ph)>3*3600000)lag.push("약국");if(UPD.hp&&Date.now()-kst(UPD.hp)>3*3600000)lag.push("병·의원");
   $("#src").classList.toggle("bad",lag.length>0);
   $("#src").textContent=parts.length?(lag.length?`⚠ 데이터 갱신 지연(${lag.join("·")}) — 표시된 정보가 오래됐을 수 있습니다. 전화로 확인하세요. · `:"자동 갱신 기준 — ")+parts.join(" · "):"데이터를 불러오지 못했습니다. 잠시 후 새로고침하세요.";
-  ["ph","hp","er","aed"].forEach(t=>$("#c-"+t).textContent=DATA[t].length||"");
+  ["ph","hp","er","aed","otc"].forEach(t=>$("#c-"+t).textContent=DATA[t].length||"");$("#tab-otc").hidden=!DATA.otc.length;
   const hasAed=DATA.aed.length>0;$("#tab-aed").hidden=!hasAed;$("#chip-aed").hidden=!hasAed;
-  const isAED=tab==="aed";
+  const isAED=tab==="aed"||tab==="otc",isOTC=tab==="otc";
 
   // 탭별 필터 표시
   const isER=tab==="er";
@@ -608,7 +608,7 @@ function render(){
   $("#near").setAttribute("aria-pressed",near);$("#late").setAttribute("aria-pressed",late);$("#sun").setAttribute("aria-pressed",sun);
   $("#div").hidden=tab!=="hp";$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
     const fn=$("#flunote");fn.hidden=!(tab==="hp"&&fluOn&&fa);if(!fn.hidden)fn.innerHTML=`<b>💉 ${esc(FLU.title||"독감 무료 예방접종")}</b><br>${esc(FLU.text||"")}${FLU.image?` <a href="${esc(FLU.image)}" target="_blank" rel="noopener">안내문 보기 ↗</a>`:""}`}
-  $("#kidnote").hidden=tab!=="er";$("#short").hidden=tab!=="ph"||!SHORT.length;$("#otcbox").hidden=tab!=="ph"||!OTC.length;if(!$("#otcbox").hidden)drawOTCList();
+  $("#kidnote").hidden=tab!=="er";$("#short").hidden=tab!=="ph"||!SHORT.length;$("#otcbox").hidden=true;$("#otcnote").hidden=tab!=="otc";
   $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
   const dsel=$("#dong"),dcur=dsel.value,dongs=[...new Set(DATA[tab].map(p=>dongOf(p.addr)))].sort();
   dsel.innerHTML=`<option value="">전체 동</option>`+dongs.map(x=>`<option${x===dcur?" selected":""}>${esc(x)}</option>`).join("");
@@ -618,6 +618,7 @@ function render(){
   let tiles;
   if(isER){const sum=DATA.er.reduce((a,h)=>a+Math.max(0,(h.b&&h.b.hvec)||0),0);
     tiles=[["all","응급실",all.length,"var(--accent)"],["ok","가용병상 합계",sum,COL.ok],["low",`여유 적음(${ER_WARN} 이하)`,c.low||0,COL.low],["none","포화(0 이하)",c.none||0,COL.none]];}
+  else if(isOTC){tiles=[["all","안전상비의약품 판매 편의점",all.length,"var(--c-otc)"]];}
   else if(isAED){tiles=[["all","자동심장충격기(AED)",all.length,"var(--c-aed)"]];}
   else{const L=LAB[tab];tiles=[["all","전체",all.length,"var(--accent)"],["open",L.open+(c.maybe?` (+ 전화 확인 ${c.maybe}곳)`:""),c.open||0,COL.open],["soon",L.soon,c.soon||0,COL.soon],["closed",L.closed,(c.closed||0)+(c.unk||0),COL.closed]];}
   $("#summary").innerHTML=tiles.map(([f,l,n,col])=>(isER&&f==="ok")?
@@ -634,7 +635,7 @@ function render(){
   const duty=r=>r.s.ov&&r.s.ov.type==="당번"?0:1;
   const pp=r=>(tab==="hp"&&$("#dept").value==="소아청소년과"&&isPedSpec(r.p))?0:1;
   const vis=visible(tab,d).sort((a,b)=>pp(a)-pp(b)||((near&&userPos)?dz(a)-dz(b):(isER||isAED)?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko")));
-  $("#list").innerHTML=vis.length?vis.slice(0,isAED?150:999).map(r=>isER?erRow(r):isAED?aedRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
+  $("#list").innerHTML=vis.length?vis.slice(0,isAED?150:999).map(r=>isER?erRow(r):isOTC?otcRow(r):isAED?aedRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
 
   drawMap(d);showInfo(d);
 }
@@ -666,6 +667,9 @@ function row(r,d){
 function aedRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:var(--c-aed)">
     <div class="name">${IC.aed}${esc(p.name)}</div>
     ${p.place?`<div class="depts" style="color:var(--ink)">설치 위치: ${esc(p.place)}</div>`:""}
+    <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`}
+function otcRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:var(--c-otc)">
+    <div class="name">${IC.ph}${esc(p.name)} <span class="tag">상비약 판매</span></div>
     <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`}
 function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
 function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
@@ -703,10 +707,11 @@ function erRow(r){
   </article>`;
 }
 
-function findSel(d){if(!selKey)return null;const t=selKey.startsWith("aed")?"aed":selKey.slice(0,2);return rowsOf(t,d).find(r=>r.p._k===selKey)||null}
+function findSel(d){if(!selKey)return null;const t=selKey.startsWith("aed")?"aed":selKey.startsWith("otc")?"otc":selKey.slice(0,2);return rowsOf(t,d).find(r=>r.p._k===selKey)||null}
 function showInfo(d){
   const box=$("#info"),r=findSel(d);if(!r){box.hidden=true;return}
   box.hidden=false;const p=r.p;
+  if(r.t==="otc"){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">상비약 판매 편의점</span></div><div>해열진통제·감기약·소화제·파스 등 · 영업시간은 업소별 상이</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${distTag(p)}${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="aed"){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">AED</span></div>${p.place?`<div>설치 위치: ${esc(p.place)}</div>`:""}<div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${distTag(p)}${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"&&p.nort){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">${esc(p.cls||"")}</span></div>${noteFor(p)}<div>실시간 병상 정보 미제공 · 운영 여부는 전화로 확인하세요</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
@@ -723,19 +728,17 @@ function drawMap(d){
   lgroup.clearLayers();
   const pts=[];
   if(userPos){lgroup.addLayer(L.marker(userPos,{icon:L.divIcon({html:'<div class="me"></div>',className:"",iconSize:[16,16],iconAnchor:[8,8]}),zIndexOffset:900,title:"내 위치"}))}
-  ["aed","hp","ph","er"].forEach(t=>{
+  ["otc","aed","hp","ph","er"].forEach(t=>{
     if(!(layers[t]||t===tab))return;
     visible(t,d).forEach(r=>{const p=r.p;if(!p.lat||!p.lon)return;
-      const sel=p._k===selKey,off=t!=="er"&&t!=="aed"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
-      const ic=t==="ph"?IC.ph:t==="er"?IC.er:t==="aed"?IC.aed:IC[hpIcon(p)];
+      const sel=p._k===selKey,off=t!=="er"&&t!=="aed"&&t!=="otc"&&(r.s.st==="closed"||r.s.st==="unk"),color=off?tok("--c-off"):tok("--c-"+t),bcol=t==="er"?tok(CV[r.s.st]):null;
+      const ic=(t==="ph"||t==="otc")?IC.ph:t==="er"?IC.er:t==="aed"?IC.aed:IC[hpIcon(p)];
       const isDuty=r.s.ov&&r.s.ov.type==="당번";const badge=t==="er"?(erClosed(p)?"중단":p.nort?"!":erNum(p.b&&p.b.hvec)):isDuty?"당번":r.s.st==="maybe"?"?":null;const bc=isDuty?tok("--c-duty"):(t==="er"&&erClosed(p))?"#c62828":(t==="er"&&p.nort)?"#b25e00":r.s.st==="maybe"?tok("--maybe"):bcol;
       const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:pinHtml(ic,color,sel,badge,bc,off,t!=="er"&&r.s.st==="soon",r.s.st==="maybe"),className:"",iconSize:[36,36],iconAnchor:[18,43]}),
-        zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:t==="aed"?"AED":LAB[t][r.s.st]}`});
+        zIndexOffset:sel?1000:t==="er"?500:off?-100:t===tab?200:0,title:`${p.name} · ${t==="er"?"응급실 가용 "+badge:t==="aed"?"AED":t==="otc"?"상비약 판매 편의점":LAB[t][r.s.st]}`});
       m.on("click",()=>select(p._k,true));lgroup.addLayer(m);if(t===tab&&!p.far)pts.push([p.lat,p.lon]);
     });
   });
-  if(layers.otc)OTC.forEach(p=>{if(!p.lat)return;const m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:`<div class="otcpin">${IC.ph}</div>`,className:"",iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:-200,title:p.name+" · 안전상비의약품 판매"});
-    m.bindPopup(`<b>${esc(p.name)}</b><br>안전상비의약품 판매업소<br>${esc(p.addr)}${p.tel?`<br><a href="tel:${p.tel.replace(/[^0-9]/g,"")}">${esc(p.tel)}</a>`:""}<br><small>해열진통제·감기약·소화제·파스 등 · 영업시간은 업소별 상이</small>`);lgroup.addLayer(m)});
   if(!fitted&&near&&userPos){lmap.setView(userPos,15);fitted=true}
   if(!fitted&&pts.length){lmap.fitBounds(pts,{padding:[30,30],maxZoom:15});fitted=true}
 }
@@ -786,7 +789,7 @@ function qCard(label,x){const r=x.r,p=r.p,t=r.t;let st;
 const qNone=msg=>`<div class="q-card none">${msg}</div>`;
 function otcCards(n){return OTC.filter(p=>p.lat).map(p=>({p,m:distM(p)})).sort((a,b)=>(a.m??1e12)-(b.m??1e12)).slice(0,n).map(({p,m})=>{const tel=(p.tel||"").replace(/[^0-9]/g,"");
   return `<div class="q-card otc"><div class="q-k">상비약 판매 편의점</div><div class="q-n">${esc(p.name)}</div><div class="q-s">${m!=null?`<span class="q-d">${distTxt(m)}</span> · `:""}해열제·감기약·소화제·파스 등</div>
-  <div class="q-act">${tel?`<a class="call" href="tel:${tel}">📞 전화</a>`:""}<a href="https://map.naver.com/p/search/${encodeURIComponent("동해시 "+p.name)}" target="_blank" rel="noopener">길찾기</a></div></div>`})}
+  <div class="q-act">${tel?`<a class="call" href="tel:${tel}">📞 전화</a>`:""}<a href="https://map.naver.com/p/search/${encodeURIComponent("동해시 "+p.name)}" target="_blank" rel="noopener">길찾기</a><button data-go="${p._k}" data-gt="otc">지도에서 보기</button></div></div>`})}
 function drawQuick(){
   const k=quickKind,box=$("#q-res");document.querySelectorAll(".q-sit").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===k));
   if(!k){box.hidden=true;return}
