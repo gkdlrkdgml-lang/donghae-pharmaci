@@ -258,6 +258,7 @@ def update_er(refresh_base):
     for hpid, (b, city, raw) in beds.items():
         h = dict(base.get(hpid) or {"id": hpid, "name": raw.get("dutyName", ""), "city": city,
                                     "tel": raw.get("dutyTel3", "")})
+        h.pop("nort", None)      # 이번 주기에 병상이 들어왔으면 이전 '미제공' 표시 해제
         for k in ("hvec", "hvs01", "hvoc", "hvicc", "hvgc", "hv28", "hvncc"):
             if k in b:
                 try:
