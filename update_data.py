@@ -349,7 +349,8 @@ def update_notice():
             continue
         items.append({"no": int(m.group(2)), "title": title,
                       "date": "%s-%02d-%02d" % (d.group(1), int(d.group(2)), int(d.group(3))) if d else "",
-                      "url": urllib.parse.urljoin(NOTICE_URL, _html.unescape(m.group(1)))})
+                      # 세션값(;JSESSIONID=…)이 붙은 주소는 시간이 지나면 오류가 나므로 글 번호로 깨끗한 주소를 만듦
+                      "url": "https://www.dh.go.kr/health/selectBbsNttView.do?key=1918&bbsNo=8&nttNo=" + m.group(2)})
     if not items:
         raise RuntimeError("게시글 0건(페이지 구조 변경 또는 접속 차단)")
     items.sort(key=lambda x: (x["date"], x["no"]), reverse=True)
