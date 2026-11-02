@@ -550,11 +550,12 @@ const erTime=s=>s&&s.length>=12?`${+s.slice(4,6)}/${+s.slice(6,8)} ${s.slice(8,1
 const TYPES={ph:"약국",hp:"병·의원",er:"응급실"};
 
 // ===== 데이터 =====
-const DATA={ph:[],hp:[],er:[],aed:[],otc:[]},UPD={};let HIST={},BADGES=[];
+const DATA={ph:[],hp:[],er:[],aed:[],otc:[]},UPD={};let HIST={},BADGES=[];var LOCFIX=[];
+function fixLoc(){LOCFIX.forEach(f=>{if(!f||!f.name||!(f.lat&&f.lon))return;for(const t in DATA)DATA[t].forEach(p=>{if(p.name===f.name&&(!f.tab||f.tab===t)){p.lat=+f.lat;p.lon=+f.lon;if(f.addr)p.addr=f.addr}})})}
 const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json",otc:"otc.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
-async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[];HIDE=Array.isArray(j.hide)?j.hide:[];BIRTH=Array.isArray(j.birth)?j.birth:[]}}catch(e){}}
+async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[];HIDE=Array.isArray(j.hide)?j.hide:[];BIRTH=Array.isArray(j.birth)?j.birth:[];LOCFIX=Array.isArray(j.loc_fix)?j.loc_fix:[]}}catch(e){}}
 async function loadHist(){try{const r=await fetch("er_history.json?t="+Date.now(),{cache:"no-store"});if(r.ok)HIST=await r.json()}catch(e){}}
 let NEWS=[],newsI=0;
 function newsUrl(n){return n.no?"https://www.dh.go.kr/health/selectBbsNttView.do?key=1918&bbsNo=8&nttNo="+encodeURIComponent(n.no):"https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918"}
@@ -628,7 +629,7 @@ function initFilters(){
   opt($("#dept"),"전체 진료과목",cnt(DATA.hp.flatMap(p=>p.d||[])));
 }
 
-function render(){
+function render(){fixLoc();
   const d=now();
   $("#clk").textContent=fmt(d.getHours()*60+d.getMinutes());
   const k=dayKey(d,$("#hol").checked);
