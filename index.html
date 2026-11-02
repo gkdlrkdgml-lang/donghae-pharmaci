@@ -299,7 +299,10 @@ button.stat:hover{transform:translateY(-2px)}
 .q-main{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:18px;padding:16px 18px;cursor:pointer;font:inherit;color:#fff;background:linear-gradient(135deg,#0b63c5,#0aa37f);box-shadow:0 6px 18px rgba(11,99,197,.28)}
 .q-main svg{width:30px;height:30px;flex:none}.q-main b{display:block;font-size:19px;font-weight:800}.q-main small{display:block;font-size:13px;font-weight:600;opacity:.92;margin-top:2px}
 .q-main:active{transform:scale(.99)}
-.q-sits{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.q-sits{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.q-sit.birth{border-color:#f2b6d4;color:#b0246e}
+.tag.birth{background:#fde7f2;color:#b0246e;border-color:#f2b6d4;font-weight:800}
+.quick.birthf[aria-pressed=true]{background:#b0246e;border-color:#b0246e;color:#fff}
 .q-sit{font:inherit;font-size:15px;font-weight:800;padding:12px 8px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)}
 .q-sit.er{border-color:#f3b4b4;color:#c62828}.q-sit[aria-pressed=true]{outline:3px solid #0b63c5;outline-offset:1px}
 .q-res{display:grid;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
@@ -315,7 +318,7 @@ button.stat:hover{transform:translateY(-2px)}
 .q-act a,.q-act button{font:inherit;font-size:14px;font-weight:800;text-decoration:none;border-radius:999px;padding:7px 12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
 .q-act a.call{background:#0aa37f;border-color:#0aa37f;color:#fff}.q-act a.c119{background:#c62828;border-color:#c62828;color:#fff}
 body.board .qfind{display:none!important}
-@media (max-width:560px){.q-sits{grid-template-columns:repeat(2,1fr)}.q-main b{font-size:17px}}
+@media (max-width:560px){.q-sits{grid-template-columns:repeat(2,1fr)}.q-sit.birth{grid-column:1/-1}.q-main b{font-size:17px}}
 .tag.flu{background:#e8f1ff;color:#0b4fa0;border:1px solid #b9d3f5;font-weight:800}
 .quick.flu{border-color:#0b63c5;color:#0b63c5}.quick.flu[aria-pressed="true"]{background:#0b63c5;color:#fff}
 .flunote{border-radius:12px;background:#eef5ff;border:1px solid #c9dcf5;color:#12324f;padding:10px 14px;font-size:14px;font-weight:600;line-height:1.6}
@@ -374,6 +377,7 @@ body.board .pop{display:none!important}
       <button class="q-sit" data-q="med">💊 약이 필요해요</button>
       <button class="q-sit" data-q="hosp">🩺 진료받고 싶어요</button>
       <button class="q-sit er" data-q="emer">🚑 응급이에요</button>
+      <button class="q-sit birth" data-q="birth">🤰 출산·분만</button>
     </div>
     <div class="q-res" id="q-res" hidden></div>
   </section>
@@ -404,6 +408,7 @@ body.board .pop{display:none!important}
     <button class="quick sm" id="sun" aria-pressed="false">일요일 운영</button>
     <select id="dong" aria-label="행정동"></select>
     <button class="quick" id="kids" aria-pressed="false">지금 진료하는 소아청소년과</button>
+    <button class="quick birthf" id="birthf" aria-pressed="false" hidden>🤰 지금 분만 가능</button>
     <button class="quick flu" id="flu" aria-pressed="false" hidden>💉 독감 무료접종 기관</button>
     <div class="kinds" id="kinds" role="group" aria-label="종별"><button data-kind="" aria-pressed="true">전체</button><button data-kind="의원" aria-pressed="false">의원</button><button data-kind="치과" aria-pressed="false">치과</button><button data-kind="한의원" aria-pressed="false">한의원</button><button data-kind="병원" aria-pressed="false">병원·보건소</button></div>
     <select id="div" aria-label="종별" hidden></select>
@@ -542,7 +547,7 @@ const DATA={ph:[],hp:[],er:[],aed:[],otc:[]},UPD={};let HIST={},BADGES=[];
 const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json",otc:"otc.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
   if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
-async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[];HIDE=Array.isArray(j.hide)?j.hide:[]}}catch(e){}}
+async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[];HIDE=Array.isArray(j.hide)?j.hide:[];BIRTH=Array.isArray(j.birth)?j.birth:[]}}catch(e){}}
 async function loadHist(){try{const r=await fetch("er_history.json?t="+Date.now(),{cache:"no-store"});if(r.ok)HIST=await r.json()}catch(e){}}
 let NEWS=[],newsI=0;
 function newsUrl(n){return n.no?"https://www.dh.go.kr/health/selectBbsNttView.do?key=1918&bbsNo=8&nttNo="+encodeURIComponent(n.no):"https://www.dh.go.kr/health/selectBbsNttList.do?bbsNo=8&key=1918"}
@@ -603,6 +608,8 @@ function visible(t,d){
     if(t==="hp"&&hpKind&&!kindOf(r.p,hpKind))return false;
     if(t==="hp"&&dp&&!(r.p.d||[]).includes(dp))return false;
     if(t==="hp"&&fluOn&&!fluInfo(r.p))return false;
+    if(t==="er"&&birthOn&&!birthOk(r.p))return false;
+    if(t==="hp"&&birthOn&&!birthClinic(r.p))return false;
     return true;
   });
 }
@@ -632,7 +639,7 @@ function render(){
   const noT=isER||isAED;
   $("#dong").hidden=noT;$("#hol").parentElement.hidden=noT;$("#sim").parentElement.hidden=noT;$("#now").hidden=noT;$("#late").hidden=noT;$("#sun").hidden=noT;
   $("#near").setAttribute("aria-pressed",near);$("#late").setAttribute("aria-pressed",late);$("#sun").setAttribute("aria-pressed",sun);
-  $("#div").hidden=true;$("#kinds").hidden=tab!=="hp";$("#kinds").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.kind===hpKind);const n=b.dataset.kind?rowsOf("hp",d).filter(r=>kindOf(r.p,b.dataset.kind)).length:rowsOf("hp",d).length;b.innerHTML=b.textContent.replace(/\s*\d+$/,"")+` <span class="n">${n}</span>`});$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
+  $("#div").hidden=true;$("#birthf").hidden=!(tab==="er"||tab==="hp"&&BIRTH.length);$("#birthf").setAttribute("aria-pressed",birthOn);$("#kinds").hidden=tab!=="hp";$("#kinds").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.kind===hpKind);const n=b.dataset.kind?rowsOf("hp",d).filter(r=>kindOf(r.p,b.dataset.kind)).length:rowsOf("hp",d).length;b.innerHTML=b.textContent.replace(/\s*\d+$/,"")+` <span class="n">${n}</span>`});$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
     const fn=$("#flunote");fn.hidden=!(tab==="hp"&&fluOn&&fa);if(!fn.hidden)fn.innerHTML=`<b>💉 ${esc(FLU.title||"독감 무료 예방접종")}</b><br>${esc(FLU.text||"")}${FLU.image?` <a href="${esc(FLU.image)}" target="_blank" rel="noopener">안내문 보기 ↗</a>`:""}`}
   $("#kidnote").hidden=tab!=="er";$("#short").hidden=tab!=="ph"||!SHORT.length;$("#otcbox").hidden=true;$("#otcnote").hidden=tab!=="otc";
   $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
@@ -681,14 +688,15 @@ function hoursHtml(r,d){
 function row(r,d){
   const p=r.p,t=r.t,ic=t==="ph"?IC.ph:IC[hpIcon(p)];
   const ov=r.s.ov,ovTag=ov?`<span class="tag ov ${ov.type==="당번"?"duty":"off"}">${ov.type==="당번"?"오늘 당번":"임시휴무"}</span>`:"";
-  const tags=ovTag+badgeFor(p)+(t==="hp"?fluTag(p)+`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
+  const bc=t==="hp"?birthClinic(p):null;
+  const tags=ovTag+badgeFor(p)+(bc?`<span class="tag birth">🤰 ${esc(bc.label||"분만 가능")}</span>`:"")+(t==="hp"?fluTag(p)+`<span class="tag">${esc(p.div)}</span>${p.er?'<span class="tag">응급실 운영</span>':""}`:"");
   const ovMemo=ov&&ov.memo?`<div class="depts" style="color:var(--c-duty)">${esc(ov.memo)}</div>`:"";
   const dep=SHOW_DEPTS&&t==="hp"&&p.d&&p.d.length?`<div class="depts">진료과목: ${esc(p.d.join(", "))}</div>`:"";
   const inf=SHOW_DEPTS&&p.inf?`<div class="depts">${esc(p.inf)}</div>`:"";
   return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:${COL[r.s.st]}">
     <div class="name">${ic}${esc(p.name)} <span class="pill">${LAB[t][r.s.st]}</span>${tags}</div>
     <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div>
-    ${noteFor(p)}${hoursHtml(r,d)}${ovMemo}${dep}${inf}</article>`;
+    ${bc&&bc.text?`<div class="depts" style="color:#b0246e;font-weight:700">🤰 ${esc(bc.text)}</div>`:""}${noteFor(p)}${hoursHtml(r,d)}${ovMemo}${dep}${inf}</article>`;
 }
 function aedRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:var(--c-aed)">
     <div class="name">${IC.aed}${esc(p.name)}</div>
@@ -706,6 +714,10 @@ const SRS_N={1:"심근경색 재관류",2:"뇌경색 재관류",3:"거미막하�
  19:"중증 화상",20:"수족지 접합",21:"사지 접합(수족지 외)",22:"응급 투석(HD)",23:"응급 투석(CRRT)",24:"정신과 폐쇄병동",25:"응급 안과수술",26:"성인 혈관중재",27:"영유아 혈관중재"};
 const SRS_ORDER=[1,2,4,3,5,6,26,9,16,17,18,15,10,12,14,27,11,13,22,23,19,20,21,25,24,7,8];
 async function loadSRS(){try{const r=await fetch("srsill.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();SRS={};(j.items||[]).forEach(i=>{if(i.hpid)SRS[i.hpid]=i});SRS_T=j.updated||""}}catch(e){}}
+var birthOn=false,BIRTH=[];
+function birthClinic(p){const d=new Date(Date.now()+9*36e5).toISOString().slice(0,10);return BIRTH.find(b=>b&&b.name===p.name&&(!b.to||d<=b.to)&&(!b.from||d>=b.from))}
+function birthOk(h){const i=SRS[h&&h.id];return !!(i&&i.MKioskTy16==="Y")}
+function birthTag(h){return birthOk(h)?`<span class="tag birth" title="병원 입력 기준 분만 수용 가능${SRS[h.id].MKioskTy17==="Y"?" · 산과 수술 가능":""}">🤰 분만 가능</span>`:""}
 function srsHtml(h){const i=SRS[h.id];if(!i)return "";
   const yes=SRS_ORDER.filter(n=>i["MKioskTy"+n]==="Y"),no=SRS_ORDER.filter(n=>i["MKioskTy"+n]==="불가능");
   if(!yes.length&&!no.length)return `<div class="srs"><b>중증 응급질환</b> <span class="srs-none">병원이 수용 가능 정보를 입력하지 않았습니다 · 전화 확인</span></div>`;
@@ -714,13 +726,13 @@ function srsHtml(h){const i=SRS[h.id];if(!i)return "";
 function erRow(r){
   const h=r.p,b=h.b||{},col=COL[r.s.st];
   if(h.nort)return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:var(--c-off)">
-    <div class="name">${IC.er}${esc(h.name)} <span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
+    <div class="name">${IC.er}${esc(h.name)} ${birthTag(h)}<span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     ${noteFor(h)}<div class="warn" style="color:var(--muted)">실시간 병상 정보를 제공하지 않는 응급실입니다. 운영 여부는 전화로 확인하세요.</div>${srsHtml(h)}
     <div class="meta">${distTag(h)}${h.tel?`<button class="tel" data-tel="${esc(h.tel)}" title="번호 복사">${esc(h.tel)}</button>`:""}<a class="nlink" href="${naver(h)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`;
   const over=b.hvec<0?`<div class="warn">과밀 +${-b.hvec} (병상보다 환자 많음)</div>`:"";
   const eq=[["hvctayn","CT"],["hvmriayn","MRI"],["hvangioayn","혈관조영"],["hvventiayn","인공호흡기"],["hv10","소아 인공호흡기"],["hvincuayn","인큐베이터"],["hvamyn","구급차"]].filter(([k])=>b[k]).map(([k,n])=>`<span class="eq${b[k]==="Y"?" y":""}">${n} ${b[k]==="Y"?"가능":"불가"}</span>`).join("");
   return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:${col}">
-    <div class="name">${IC.er}${esc(h.name)} ${kidTag(b)}<span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
+    <div class="name">${IC.er}${esc(h.name)} ${kidTag(b)}${birthTag(h)}<span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     <div class="beds">
       <div class="bed big"><span class="v">${erNum(b.hvec)}${b.hvs01!=null?` <small>/ ${b.hvs01}</small>`:""}</span><span class="k">응급실 가용</span></div>
       <div class="bed"><span class="v">${erNum(b.hvicc)}</span><span class="k">중환자실</span></div>
@@ -805,8 +817,8 @@ const isOpenRow=r=>["open","soon","maybe"].includes(r.s.st);
 function setTab(t){tab=t;syncLayers(t);filter="all";selKey=null;fitted=false;document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t))}
 const isPedSpec=p=>/소아/.test(p.name)||((p.d||[]).length===1&&p.d[0]==="소아청소년과");
 function nearRows(t,pred,n){return rowsOf(t,now()).filter(r=>r.p.lat&&pred(r)).map(r=>({r,m:distM(r.p)})).sort((a,b)=>(a.m??1e12)-(b.m??1e12)).slice(0,n||1)}
-function qCard(label,x){const r=x.r,p=r.p,t=r.t;let st;
-  if(t==="er"){const b=p.b||{};st=p.nort?"실시간 병상 정보 없음 · 전화 확인":`응급실 병상 ${erNum(b.hvec)}`+(b.hv28>0?` · 소아 ${b.hv28}`:"")}
+function qCard(label,x,ovr){const r=x.r,p=r.p,t=r.t;let st;
+  if(ovr)st=ovr;else if(t==="er"){const b=p.b||{};st=(p.nort?"실시간 병상 정보 없음 · 전화 확인":`응급실 병상 ${erNum(b.hvec)}`+(b.hv28>0?` · 소아 ${b.hv28}`:""))+(birthOk(p)?" · 🤰 분만 가능":"")}
   else st=LAB[t][r.s.st]+(r.s.open?` · ${fmt(r.s.open[1])}까지`:"");
   const tel=(p.tel||"").replace(/[^0-9]/g,"");
   return `<div class="q-card" style="--c:var(--c-${t})"><div class="q-k">${label}</div><div class="q-n">${esc(p.name)}</div>
@@ -832,9 +844,13 @@ function drawQuick(){
     if(sp.length||ot.length){cards=[...(sp.length?sp:[qNone("지금 진료 중인 소아청소년과가 없어, 소아 진료가 가능한 가까운 의원을 안내합니다.")]),...ot]}
     else{cards=[qNone("지금 진료 중인 소아청소년과·소아 진료 의원이 없습니다. 아래 응급실로 전화 후 방문하세요."),...er(2)];
       extra="응급실은 소아 전용병상 표시가 없어도 소아 환자를 진료합니다. 방문 전 전화로 확인하세요."}}
+  else if(k==="birth"){title="출산·분만이 필요할 때";const bt=nearRows("er",r=>erOk(r)&&birthOk(r.p),2).map(x=>qCard("분만 가능 응급실",x));
+    const cl=nearRows("hp",r=>!!birthClinic(r.p),2).map(x=>{const c=birthClinic(x.r.p);return qCard(c.label||"분만 산부인과",x,c.text||"분만 가능 · 전화 확인")});
+    cards=[...cl,...(bt.length?bt:[qNone("지금 ‘분만 가능’으로 입력한 응급실이 없습니다. 가까운 응급실에 전화로 확인하세요."),...er(1)])];
+    extra="분만 가능 여부는 각 병원이 국립중앙의료원(E-Gen)에 입력한 실시간 정보입니다. 다니던 산부인과에 먼저 연락하시고, 출혈·양수 파수·심한 진통이 있으면 바로 119에 신고하세요."}
   else{title="응급 상황";cards=er(2);extra="의식이 없거나 숨쉬기 힘들면 바로 119에 전화하세요."}
   box.hidden=false;
-  box.innerHTML=`<div class="q-head"><span>${title}</span><span class="q-act">${k==="emer"||k==="kid"?`<a class="c119" href="tel:119">📞 119</a>`:""}<button class="q-x" id="q-x">닫기 ✕</button></span></div>
+  box.innerHTML=`<div class="q-head"><span>${title}</span><span class="q-act">${k==="emer"||k==="kid"||k==="birth"?`<a class="c119" href="tel:119">📞 119</a>`:""}<button class="q-x" id="q-x">닫기 ✕</button></span></div>
     ${posGuess?`<div class="q-msg">⚠ 현재 위치가 정확하지 않아(PC는 위치가 서울 등으로 잡힐 수 있습니다) <b>동해시청 기준</b> 거리로 보여드립니다. 휴대폰에서는 내 위치 기준으로 나옵니다.</div>`:""}${userPos?"":`<div class="q-msg">위치를 확인하지 못해 거리 순으로 보여드리지 못했습니다. 위치 권한을 허용한 뒤 다시 눌러 주세요.</div>`}
     <div class="q-call">📞 문을 열었는지·진료 가능한지 꼭 전화로 확인한 뒤 방문하세요.</div>
     <div class="q-cards">${cards.join("")}</div>${extra?`<div class="q-msg">${extra}</div>`:""}`;
@@ -909,6 +925,7 @@ function fluInfo(p){if(!FLU||!Array.isArray(FLU.items))return null;const d=ymd(n
 function fluTag(p){const f=fluInfo(p);if(!f)return "";const w=[f.kid&&"어린이",f.preg&&"임신부",f.old&&"어르신"].filter(Boolean).join("·");return `<span class="tag flu">💉 독감 무료접종 ${w}${f.inpatient?"(입원환자)":""}</span>`}
 async function loadFlu(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();FLU=j.flu||null;render()}}catch(e){}}
 $("#flu").onclick=()=>{fluOn=!fluOn;fitted=false;render()};
+$("#birthf").onclick=()=>{birthOn=!birthOn;fitted=false;render()};
 loadFlu();setInterval(loadFlu,10*60000);
 async function showPopup(){if(popShown||document.body.classList.contains("board"))return;
   let j;try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;j=await r.json()}catch(e){return}
