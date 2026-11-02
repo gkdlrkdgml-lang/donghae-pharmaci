@@ -208,6 +208,10 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:26p
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 30c100-24 200-24 300 0s200 24 300 0 200-24 300 0 200 24 300 0v30H0z' fill='%23ffffff' fill-opacity='.18'/%3E%3Cpath d='M0 40c100-18 200-18 300 0s200 18 300 0 200-18 300 0 200 18 300 0v20H0z' fill='%23ffffff' fill-opacity='.22'/%3E%3C/svg%3E") center/100% 100% no-repeat}
 header>*{position:relative;z-index:1}
 .eyebrow{color:rgba(255,255,255,.82);font-size:14px;font-weight:700;letter-spacing:.04em}
+.slogan{display:inline-block;font-size:12px;font-weight:700;color:#f3dfa8;letter-spacing:.03em;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(243,223,168,.5)}
+.pledge{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding:5px 12px 5px 5px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(243,223,168,.55);font-size:13.5px;font-weight:600;color:#fff;word-break:keep-all}
+.pledge .pl-t{background:#c9a24a;color:#14284b;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:900}
+.pledge b{color:#ffe7a8;font-weight:900}
 h1{font-size:32px;font-weight:800;letter-spacing:-.03em;color:#fff;margin-top:6px}
 h1 .sep{color:rgba(255,255,255,.45)}
 h1 .k-ph{color:#6ee7b7}h1 .k-hp{color:#93c5fd}h1 .k-er{color:#fda4af}
@@ -316,6 +320,7 @@ button.stat:hover{transform:translateY(-2px)}
 .q-msg{font-size:14px;font-weight:700;color:var(--muted);word-break:keep-all}
 .q-card .q-note{font-size:13px;font-weight:700;color:#b0246e;word-break:keep-all}
 .disclaim{word-break:keep-all}
+.ft-slogan{font-weight:800;color:var(--accent);margin-bottom:6px;word-break:keep-all}
 .q-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
 .q-card{border:1px solid var(--line);border-left:5px solid var(--c);border-radius:12px;padding:10px 12px;display:grid;gap:4px}
 .q-card .q-k{font-size:12.5px;font-weight:800;color:var(--c)}.q-card .q-n{font-size:17px;font-weight:800}
@@ -369,8 +374,10 @@ body.board .pop{display:none!important}
   <header>
     <div class="brand">
       <div>
+      <div class="slogan">새로운 동해, 시민과 함께 여는 미래</div>
       <div class="eyebrow">동해시 실시간 의료기관 안내</div>
       <h1>아플 때 바로 찾는 <span class="k k-ph">약국</span><span class="sep">·</span><span class="k k-hp">병원</span><span class="sep">·</span><span class="k k-er">응급실</span></h1>
+      <div class="pledge"><span class="pl-t">민선 9기 공약</span><span><b>「응급의료 30분 책임도시」</b></span></div>
       </div>
     </div>
     <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div><button class="btn" id="board" style="margin-top:4px;font-size:12px;padding:3px 10px">상황판 모드</button></div>
@@ -451,6 +458,7 @@ body.board .pop{display:none!important}
   </div>
 
   <footer>
+    <div class="ft-slogan">동해시 · 새로운 동해, 시민과 함께 여는 미래 · 민선 9기 「응급의료 30분 책임도시」</div>
     <div class="disclaim" id="disclaim"><b class="dh">⚠ 이용 안내 (정보 출처와 한계)</b><ul>
       <li>이 페이지는 <b>국립중앙의료원(E-Gen)이 공공데이터포털로 제공하는 정보</b>와 <b>동해시보건소 공지(휴일지킴이·심야약국·휴진·응급실 운영 중단 등)</b>를 자동으로 모아 보여 주는 서비스이며, 법적 효력이 없습니다.</li>
       <li>운영시간·가용병상은 각 기관이 직접 입력한 값이라 임시 휴진, 조기 마감, 진료 인력·병상 변동 등이 즉시 반영되지 않을 수 있습니다.</li>
@@ -675,7 +683,8 @@ function render(){fixLoc();
   const dz=r=>{const m=distM(r.p);return m==null?1e12:m};
   const duty=r=>r.s.ov&&r.s.ov.type==="당번"?0:1;
   const pp=r=>(tab==="hp"&&$("#dept").value==="소아청소년과"&&isPedSpec(r.p))?0:1;
-  const vis=visible(tab,d).sort((a,b)=>pp(a)-pp(b)||((near&&userPos)?dz(a)-dz(b):(isER||isAED)?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||a.p.name.localeCompare(b.p.name,"ko")));
+  const dk=r=>tab==="hp"&&/치과|한의원|한방/.test(r.p.div||"")?1:0;   // 병·의원 먼저, 치과·한의원은 뒤로(같은 영업 상태 안에서)
+  const vis=visible(tab,d).sort((a,b)=>pp(a)-pp(b)||((near&&userPos)?dz(a)-dz(b):(isER||isAED)?0:duty(a)-duty(b)||order[a.s.st]-order[b.s.st]||dk(a)-dk(b)||a.p.name.localeCompare(b.p.name,"ko")));
   $("#list").innerHTML=vis.length?vis.slice(0,isAED?150:999).map(r=>isER?erRow(r):isOTC?otcRow(r):isAED?aedRow(r):row(r,d)).join(""):`<div class="empty">${DATA[tab].length?"조건에 맞는 곳이 없습니다.":"데이터를 불러오는 중이거나 아직 없습니다."}</div>`;
 
   drawMap(d);showInfo(d);
