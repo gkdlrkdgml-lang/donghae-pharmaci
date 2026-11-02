@@ -855,8 +855,22 @@ if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceW
 (function(){
   const box=$("#inst"),txt=$("#inst-t"),go=$("#inst-go");let ev=null;
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-  let hid=false;try{hid=Date.now()-Number(localStorage.getItem("instHide")||0)<30*864e5}catch(e){}
+  // QR코드(?app=1)로 들어오면: 카카오톡·네이버 등 앱 안 브라우저에서는 크롬(아이폰은 Safari)으로 다시 열고, 크롬에서는 설치 안내를 바로 보여 줌
+  const q=new URLSearchParams(location.search),fromQR=q.has("app");
+  if(fromQR&&!standalone){
+    const ua0=navigator.userAgent,and=/Android/i.test(ua0),ios0=/iPhone|iPad|iPod/.test(ua0);
+    const inApp=/KAKAOTALK|NAVER|DaumApps|Instagram|FBAN|FBAV|Line\/|; wv\)|SamsungBrowser|Whale|EdgA|OPR\//.test(ua0);
+    const url="https://"+location.host+location.pathname+"?app=1";
+    let tried=null;const mark=()=>{try{sessionStorage.setItem("toChrome","1")}catch(e){}};try{tried=sessionStorage.getItem("toChrome")}catch(e){}
+    if(and&&inApp&&!tried){mark();
+      location.href="intent://"+location.host+location.pathname+"?app=1#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(url)+";end";return}
+    if(ios0&&/KAKAOTALK/.test(ua0)&&!tried){mark();location.href="kakaotalk://web/openExternal?url="+encodeURIComponent(url);return}
+  }
+  let hid=false;try{hid=!fromQR&&Date.now()-Number(localStorage.getItem("instHide")||0)<30*864e5}catch(e){}
   if(standalone||hid)return;
+  if(fromQR){const and=/Android/i.test(navigator.userAgent);
+    if(and){txt.textContent="📱 아래 [설치]를 누르면 휴대폰 바탕화면에 앱이 생깁니다. (버튼이 안 보이면 오른쪽 위 ⋮ → ‘홈 화면에 추가’ 또는 ‘앱 설치’)";box.hidden=false}
+    box.scrollIntoView({block:"start"})}
   $("#inst-x").onclick=()=>{box.hidden=true;try{localStorage.setItem("instHide",String(Date.now()))}catch(e){}};
   addEventListener("beforeinstallprompt",e=>{e.preventDefault();ev=e;txt.textContent="📱 홈 화면에 앱으로 설치하면 바로 열 수 있습니다.";go.hidden=false;box.hidden=false});
   go.onclick=async()=>{if(!ev)return;ev.prompt();try{await ev.userChoice}catch(e){}ev=null;box.hidden=true};
