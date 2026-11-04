@@ -516,7 +516,7 @@ function erClosed(p){const t=now().getTime();return ERC.find(c=>c&&c.name===p.na
 function erStopHtml(p){const t=now().getTime(),c=erClosed(p),up=ERC.filter(x=>x&&x.name===p.name&&erT(x.from)>t&&erT(x.from)-t<45*864e5).sort((a,b)=>erT(a.from)-erT(b.from));
   let h="";if(c)h+=`<div class="caution stop"><b>⛔ 응급실 운영 중단 중</b> ${erFmt(c.from)} ~ ${erFmt(c.to)} · 다른 응급실을 이용하세요</div>`;
   if(up.length)h+=`<div class="caution"><b>응급실 운영 중단 예정</b><br>${up.map(x=>erFmt(x.from)+" ~ "+erFmt(x.to)).join("<br>")}</div>`;return h}
-function noteFor(p){const _d=new Date(Date.now()+9*36e5).toISOString().slice(0,10);const n=NOTES.find(n=>n&&n.name===p.name&&(!n.tab||n.tab===p._t)&&(!n.to||_d<=n.to)&&(!n.from||_d>=n.from));return (p._t==="er"||p.er?erStopHtml(p):"")+(n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:"")}
+function noteFor(p){const _d=new Date(Date.now()+9*36e5).toISOString().slice(0,10);const n=NOTES.find(n=>n&&n.name===p.name&&(!n.addr||String(p.addr||"").includes(n.addr))&&(!n.tab||n.tab===p._t)&&(!n.to||_d<=n.to)&&(!n.from||_d>=n.from));return (p._t==="er"||p.er?erStopHtml(p):"")+(n?`<div class="caution"><b>⚠ 주의</b> ${esc(n.text)}</div>`:"")}
 function ovFor(p,d){if(!OV.length||p._t==="er")return null;const ds=ymd(d);
   return OV.find(o=>o&&o.name===p.name&&(!o.addr||String(p.addr||"").includes(o.addr))&&
     ((o.date&&o.date===ds)||(o.from&&o.from<=ds&&ds<=(o.to||o.from))))||null}
@@ -524,19 +524,23 @@ function ovFor(p,d){if(!OV.length||p._t==="er")return null;const ds=ymd(d);
 let FIX=[];
 const hm=x=>toMin(String(x).replace(":",""));
 function fixSpans(p,w,ds){
-  let base=span(p,w)?[span(p,w)]:[],fx=false;
+  let base=span(p,w)?[span(p,w)]:[],fx=false,bo=false;
   FIX.forEach(f=>{if(!f||f.name!==p.name||(f.addr&&!String(p.addr||"").includes(f.addr)))return;
     if((f.from&&ds<f.from)||(f.to&&ds>f.to)||!(f.days||[]).includes(w))return;
-    if(f.mode==="closed"){base=[];return}   // 정기 휴무(공공데이터에는 영업으로 등록된 요일)
+    if(f.weeks&&!f.weeks.includes(Math.ceil(+String(ds).slice(8,10)/7)))return;   // 매월 n번째 주만 적용(예: 둘째·넷째 토요일 휴무)
+    if(!/네이버/.test(f.memo||""))bo=true;
+    if(f.mode==="closed"){base=[];fx=true;return}   // 정기 휴무(공공데이터에는 영업으로 등록된 요일)
     let sp=[hm(f.open),hm(f.close)];if(sp[1]<=sp[0])sp[1]+=1440;
     if(f.mode==="add")base.push(sp);else base=[sp];fx=true});
-  base.sort((x,y)=>x[0]-y[0]);base.fx=fx;return base;
+  base.sort((x,y)=>x[0]-y[0]);base.fx=fx;base.bo=bo;return base;
 }
+function holClosed(p,ds){return FIX.some(f=>f&&f.name===p.name&&(!f.addr||String(p.addr||"").includes(f.addr))&&f.mode==="closed"&&(f.days||[]).includes(8)&&!(f.from&&ds<f.from)&&!(f.to&&ds>f.to))}
 function status(p,d){
   const ov=ovFor(p,d),k=dayKey(d,$("#hol").checked),m=d.getHours()*60+d.getMinutes(),wd=d.getDay()||7,ds=ymd(d);
   if(ov&&ov.type==="휴무")return{st:"closed",today:null,open:null,all:[],k,m,ov};
   let all,est=false;
   if(ov&&ov.type==="당번"&&ov.open&&ov.close){let sp=[hm(ov.open),hm(ov.close)];if(sp[1]<=sp[0])sp[1]+=1440;all=[sp]}
+  else if(k===8&&holClosed(p,ds))all=[];
   else if(k===8){const h=span(p,8);if(h)all=[h];else{all=fixSpans(p,wd,ds);est=all.length>0}}   // 공휴일 시간 미등록 → 평소 요일 기준(확인 필요)
   else all=fixSpans(p,wd,ds);
   const cur=all.find(x=>m>=x[0]&&m<x[1])||null;
@@ -546,7 +550,7 @@ function status(p,d){
   if(prev&&prev[1]>1440&&m<prev[1]-1440)open=[prev[0]-1440,prev[1]-1440];
   if(cur)open=cur;
   const st=(!Object.keys(p.t||{}).length&&!all.length)?"unk":open?(est&&open===cur?"maybe":open[1]-m<=SOON?"soon":"open"):"closed";
-  return{st,today,open,all,k,m,ov,est,fx:!!all.fx};
+  return{st,today,open,all,k,m,ov,est,fx:!!all.fx,bo:!!all.bo};
 }
 const DAYN={1:"월",2:"화",3:"수",4:"목",5:"금",6:"토",7:"일",8:"공휴일"};
 const COL={maybe:"var(--maybe)",open:"var(--open)",soon:"var(--soon)",closed:"var(--closed)",unk:"var(--closed)",ok:"var(--open)",low:"var(--soon)",none:"var(--danger)"};
@@ -699,7 +703,7 @@ function hoursHtml(r,d){
   if(s.open&&s.open[0]<0)segs+=`<i style="left:0;width:${s.open[1]/14.4}%"></i>`;
   let sub="";if(s.today&&s.today[0]===0&&s.today[1]>=1440)sub="";else if(s.st==="open")sub=`${fmt(s.open[1])} 마감`;else if(s.st==="soon")sub=`${s.open[1]-s.m}분 후 마감`;else if(s.today&&s.m<s.today[0])sub=`${fmt(s.today[0])} 시작`;
   const nowPct=(d.getHours()*60+d.getMinutes())/14.4;
-  const fxn=s.fx?` <span class="fxn">보건소 안내 기준</span>`:"";
+  const fxn=s.fx?` <span class="fxn">${s.bo?"보건소 안내 기준":"최근 확인 기준"}</span>`:"";
   const dlab=s.est?"일월화수목금토"[d.getDay()]+"요일 기준(공휴일 시간 미등록)":DAYN[s.k];
   return `<div class="hours"><div class="txt"><span>${dlab} ${txt}${fxn}</span><span>${sub}</span></div><div class="bar">${segs}<b style="left:${nowPct}%"></b></div><div class="ticks"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div></div>`;
 }
@@ -771,7 +775,7 @@ function showInfo(d){
   if(r.t==="aed"){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">AED</span></div>${p.place?`<div>설치 위치: ${esc(p.place)}</div>`:""}<div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${distTag(p)}${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"&&p.nort){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">${esc(p.cls||"")}</span></div>${noteFor(p)}<div>실시간 병상 정보 미제공 · 운영 여부는 전화로 확인하세요</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
-  const s=r.s,ht=s.today?`${DAYN[s.k]} `+((s.all&&s.all.length)?s.all:[s.today]).map(([o,c])=>(o===0&&c>=1440)?"24시간":`${fmt(o)}–${fmt(c)}`).join(" · ")+(s.fx?" (보건소 안내 기준)":""):"오늘 휴무/미등록";
+  const s=r.s,ht=s.today?`${DAYN[s.k]} `+((s.all&&s.all.length)?s.all:[s.today]).map(([o,c])=>(o===0&&c>=1440)?"24시간":`${fmt(o)}–${fmt(c)}`).join(" · ")+(s.fx?(s.bo?" (보건소 안내 기준)":" (최근 확인 기준)"):""):"오늘 휴무/미등록";
   box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}${r.t==="hp"?fluTag(p):""}</div>${noteFor(p)}<div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
 }
 
