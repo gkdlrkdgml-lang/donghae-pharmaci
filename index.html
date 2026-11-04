@@ -527,6 +527,7 @@ function fixSpans(p,w,ds){
   let base=span(p,w)?[span(p,w)]:[],fx=false;
   FIX.forEach(f=>{if(!f||f.name!==p.name||(f.addr&&!String(p.addr||"").includes(f.addr)))return;
     if((f.from&&ds<f.from)||(f.to&&ds>f.to)||!(f.days||[]).includes(w))return;
+    if(f.mode==="closed"){base=[];return}   // 정기 휴무(공공데이터에는 영업으로 등록된 요일)
     let sp=[hm(f.open),hm(f.close)];if(sp[1]<=sp[0])sp[1]+=1440;
     if(f.mode==="add")base.push(sp);else base=[sp];fx=true});
   base.sort((x,y)=>x[0]-y[0]);base.fx=fx;return base;
