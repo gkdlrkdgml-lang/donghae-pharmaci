@@ -23,15 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # 외부 실행 코드는 커밋 해시로 고정(무결성 검사 없는 코드 다운로드 방지) — v4.4.0 / v5.6.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
       - name: 공공데이터 API 조회
         env:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+          # 실행 조건 값은 환경변수로 넘김(스크립트에 직접 끼워 넣지 않음 — 명령어 삽입 방지)
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_FULL: ${{ inputs.full }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" -a "${{ inputs.full }}" != "false" ] || [ "${{ github.event.schedule }}" = "50 20 * * *" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_FULL" != "false" ] || [ "$EVENT_SCHEDULE" = "50 20 * * *" ]; then
             python update_data.py --daily
           else
             python update_data.py
