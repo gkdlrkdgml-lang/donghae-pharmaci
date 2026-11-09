@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
 import urllib.request
 # [보안 검토] parse_xml() 에서 DTD/ENTITY 차단 후에만 사용
@@ -366,7 +367,10 @@ def update_notice():
         # [보안 검토] check_url 통과
         with urllib.request.urlopen(req, timeout=20, context=ssl.create_default_context()) as r:  # nosec B310
             raw = read_limited(r)
-    except ssl.SSLError as e:
+    except (ssl.SSLError, urllib.error.URLError) as e:
+        # urlopen 은 암호화 오류를 URLError 로 감싸서 던지므로, 그 원인이 암호화(SSL) 오류일 때만 재시도
+        if isinstance(e, urllib.error.URLError) and not isinstance(e.reason, ssl.SSLError):
+            raise
         # 보건소 서버가 구형 암호화만 지원할 때만 보안수준을 한 단계 낮춰 재시도(인증서 검증은 그대로 유지, 공개 게시판 읽기 전용)
         log(f"보건소 게시판 기본 TLS 실패, 호환 모드로 재시도: {e}")
         ctx = ssl.create_default_context()
