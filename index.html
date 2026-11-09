@@ -279,6 +279,8 @@ button.stat:hover{transform:translateY(-2px)}
 .bar b{width:3px;border-radius:2px;top:-3px;bottom:-3px}
 .ticks{font-size:10px;opacity:.75}
 .caution{border-radius:12px;border:0;background:#fff3cd;color:#6b4300;padding:10px 12px}
+.stale{display:flex;align-items:flex-start;gap:10px;margin:10px 0 0;padding:12px 14px;border-radius:14px;background:#fdecea;border:2px solid #d63b35;color:#7a1712;font-size:14.5px;font-weight:600;line-height:1.5;word-break:keep-all}
+.stale b{display:block;font-size:15.5px;color:#b3261e}
 .callfirst{display:flex;align-items:center;gap:12px;word-break:keep-all;margin:10px 0;padding:12px 14px;border-radius:14px;background:#fff6db;border:2px solid #f0b400;color:#4a3500;font-size:14.5px;font-weight:600;line-height:1.5}
 .callfirst .cf-i{flex:none;font-size:24px;line-height:1}
 .callfirst .cf-b{flex:1;min-width:0}
@@ -387,6 +389,7 @@ body.board .pop{display:none!important}
     <div class="clock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div><button class="btn" id="board" style="margin-top:4px;font-size:12px;padding:3px 10px">상황판 모드</button></div>
   </header>
 
+  <div class="stale" id="stale" role="alert" hidden></div>
   <div class="callfirst" role="note"><span class="cf-i">📞</span><div class="cf-b"><b class="cf-h">방문 전 반드시 전화로 확인하세요</b><span class="cf-s">국립중앙의료원(E-Gen) <b>공공데이터</b>와 동해시보건소 공지를 기반으로 자동 안내하는 정보로, 기관 사정에 따라 실제 운영과 다를 수 있습니다.</span><a class="cf-more" href="#disclaim">자세히 보기 ›</a></div><a class="cf-119" href="tel:119">119</a></div>
   <section class="qfind" id="quick" aria-label="빠른 찾기">
     <button class="q-main" id="q-all"><span data-ic="loc"></span><span><b>지금 제일 가까운 곳 찾기</b><small>내 위치에서 가장 가까운 문 연 약국·병원·응급실</small></span></button>
@@ -569,11 +572,11 @@ const erTime=s=>s&&s.length>=12?`${+s.slice(4,6)}/${+s.slice(6,8)} ${s.slice(8,1
 const TYPES={ph:"약국",hp:"병·의원",er:"응급실"};
 
 // ===== 데이터 =====
-const DATA={ph:[],hp:[],er:[],aed:[],otc:[]},UPD={};let HIST={},BADGES=[];var LOCFIX=[];
+const DATA={ph:[],hp:[],er:[],aed:[],otc:[]},UPD={};let erTried=false;let HIST={},BADGES=[];var LOCFIX=[];
 function fixLoc(){LOCFIX.forEach(f=>{if(!f||!f.name||!(f.lat&&f.lon))return;for(const t in DATA)DATA[t].forEach(p=>{if(p.name===f.name&&(!f.tab||f.tab===t)){p.lat=+f.lat;p.lon=+f.lon;if(f.addr)p.addr=f.addr}})})}
 const FILES={ph:"pharmacy.json",hp:"hospital.json",er:"er.json",aed:"aed.json",otc:"otc.json"};
 async function load(t){try{const r=await fetch(FILES[t]+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
-  if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}}
+  if(Array.isArray(j.items)){DATA[t]=j.items.map((p,i)=>Object.assign(p,{_t:t,_k:t+i}));UPD[t]=j.updated||"";fitted=false;}}catch(e){}finally{if(t==="er")erTried=true}}
 async function loadOV(){try{const r=await fetch("duty.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OV=Array.isArray(j.items)?j.items:[];NOTES=Array.isArray(j.notes)?j.notes:[];BADGES=Array.isArray(j.badges)?j.badges:[];FIX=Array.isArray(j.hours)?j.hours:[];ERC=Array.isArray(j.er_closed)?j.er_closed:[];HIDE=Array.isArray(j.hide)?j.hide:[];BIRTH=Array.isArray(j.birth)?j.birth:[];LOCFIX=Array.isArray(j.loc_fix)?j.loc_fix:[]}}catch(e){}}
 async function loadHist(){try{const r=await fetch("er_history.json?t="+Date.now(),{cache:"no-store"});if(r.ok)HIST=await r.json()}catch(e){}}
 let NEWS=[],newsI=0;
@@ -595,6 +598,18 @@ const SHOW_OTC=false;   // 상비약 편의점 표시(잠시 숨김: false → �
 async function loadOTC(){if(!SHOW_OTC){DATA.otc=[];OTC=[];$("#chip-otc").hidden=true;return}await load("otc");OTC=DATA.otc;$("#chip-otc").hidden=!OTC.length}
 async function loadAll(){await Promise.all(["ph","hp","er","aed"].map(load).concat(loadOV(),loadHist(),loadOTC(),loadSRS(),loadShort()));initFilters();render()}
 async function loadER(){await Promise.all([load("er"),loadHist(),loadSRS()]);render()}
+// ── 갱신 지연 경보: 자동 갱신이 멈추면 오래된 정보를 믿지 않도록 화면 상단에 알림 ──
+const STALE_MIN={er:30,ph:180,hp:180};   // 응급실 30분, 약국·병의원 3시간(평소 1시간마다 갱신)
+const kstMs=s=>{const m=/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(s||"");return m?Date.UTC(+m[1],m[2]-1,+m[3],m[4]-9,+m[5]):NaN};
+function checkStale(){
+  const box=$("#stale");if(!box)return;const msgs=[];const nowMs=Date.now();
+  const lab={er:"응급실 병상",ph:"약국 영업시간",hp:"병·의원 진료시간"};
+  if(erTried&&!UPD.er)msgs.push("응급실 병상 정보를 불러오지 못했습니다.");
+  for(const k of ["er","ph","hp"]){const ms=kstMs(UPD[k]);if(isNaN(ms))continue;const age=Math.round((nowMs-ms)/60000);
+    if(age>STALE_MIN[k]){const d=new Date(ms+9*36e5);msgs.push(`${lab[k]} 정보가 ${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")} 이후 갱신되지 않았습니다(${age>=120?Math.floor(age/60)+"시간":age+"분"} 경과).`)}}
+  box.hidden=!msgs.length;
+  if(msgs.length)box.innerHTML=`<span aria-hidden="true">⚠</span><div><b>정보 갱신 지연</b>${msgs.map(esc).join("<br>")}<br>화면의 정보가 실제와 다를 수 있으니 반드시 전화로 확인하세요. 응급 상황은 119에 먼저 연락하세요.</div>`;
+}
 // 거리(m)
 let userPos=null,near=false,late=false,sun=false;
 function distM(p){if(!userPos||!p.lat)return null;const R=6371000,a=userPos[0]*Math.PI/180,b=p.lat*Math.PI/180,dl=(p.lon-userPos[1])*Math.PI/180;
@@ -648,7 +663,7 @@ function initFilters(){
   opt($("#dept"),"전체 진료과목",cnt(DATA.hp.flatMap(p=>p.d||[])));
 }
 
-function render(){fixLoc();
+function render(){fixLoc();checkStale();
   const d=now();
   $("#clk").textContent=fmt(d.getHours()*60+d.getMinutes());
   const k=dayKey(d,$("#hol").checked);

@@ -487,14 +487,18 @@ def main():
         update_notice()
     except Exception as e:  # 선택 기능: 실패해도 영향 없음
         log(f"보건소 새소식 건너뜀: {e}")
+    er_failed = False
     for name, fn in jobs:
         try:
             fn()
             ok += 1
         except Exception as e:  # 실패한 항목은 기존 파일 유지
             fail += 1
+            er_failed = er_failed or name == "응급실"
             log(f"{name} 실패, 기존 파일 유지: {e}")
-    if ok == 0:
+    # 응급실 갱신 실패 또는 전체 실패 시 실행을 '실패'로 끝내 GitHub 실패 알림(메일)이 가도록 함(보안 로깅·경보)
+    # 성공한 다른 항목은 다음 단계에서 그대로 저장됨
+    if ok == 0 or er_failed:
         sys.exit(1)
 
 
