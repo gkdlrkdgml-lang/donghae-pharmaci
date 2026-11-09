@@ -1,0 +1,55 @@
+name: 보안 점검
+
+# 코드가 바뀔 때마다 + 매주 월요일 06:20(한국시간) 자동 점검. 문제가 있으면 실패로 끝나 GitHub 알림 메일이 옴
+on:
+  push:
+    branches: [main]
+    paths: ["index.html", "update_data.py", "sw.js", ".github/workflows/**"]
+  schedule:
+    - cron: "20 21 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262   # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065   # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: 데이터 수집 프로그램 보안약점 진단(Bandit)
+        run: |
+          pip install --quiet bandit==1.9.4
+          bandit -q update_data.py
+      - name: 화면 보안 설정 점검(CSP 해시·SRI·위험 코드)
+        run: |
+          python - <<'PY'
+          import re, hashlib, base64, sys
+          h = open("index.html", encoding="utf-8").read()
+          bad = []
+          csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', h)
+          if not csp:
+              bad.append("보안정책(CSP) 없음")
+          inline = re.findall(r"<script>(.*?)</script>", h, re.S)
+          for s in inline:
+              d = "sha256-" + base64.b64encode(hashlib.sha256(s.encode("utf-8")).digest()).decode()
+              if csp and f"'{d}'" not in csp.group(1):
+                  bad.append(f"화면 스크립트 해시 불일치(보안정책 갱신 필요): {d}")
+          for tag in re.findall(r"<(?:script|link)[^>]+(?:src|href)=\"https://[^\"]+\"[^>]*>", h):
+              if ("<script" in tag or 'rel="stylesheet"' in tag) and "integrity=" not in tag:
+                  bad.append("무결성 해시(SRI) 없는 외부 파일: " + tag[:100])
+          if re.search(r"<[^>]+\son[a-z]+\s*=", h):
+              bad.append("HTML 인라인 이벤트 처리(onclick 등) 발견")
+          for pat, name in [(r"\beval\s*\(", "eval"), (r"new Function\s*\(", "new Function"), (r"document\.write\s*\(", "document.write")]:
+              if re.search(pat, h):
+                  bad.append(f"위험 코드 사용: {name}")
+          if bad:
+              print("\n".join("✗ " + b for b in bad)); sys.exit(1)
+          print("✓ 보안정책·무결성 해시·위험 코드 점검 통과")
+          PY
