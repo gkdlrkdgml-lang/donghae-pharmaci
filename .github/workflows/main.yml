@@ -44,6 +44,7 @@ jobs:
             python update_data.py
           fi
       - name: 변경 내용 저장
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
