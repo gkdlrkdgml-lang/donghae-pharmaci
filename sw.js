@@ -1,9 +1,8 @@
 // 동해시 의료기관 운영현황 — 오프라인 대비용 서비스 워커
 // 원칙: 항상 인터넷에서 최신 내용을 먼저 받고, 연결이 안 될 때만 마지막으로 받은 내용을 보여 줍니다.
-const CACHE = "dh-med-v1";
+const CACHE = "dh-med-v2";   // 라이브러리 주소 변경(무결성 해시 적용) 시 이전 저장본 정리
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png"];
-const LIBS = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net"];   // 지도 라이브러리·글꼴
-
+const LIBS = ["unpkg.com", "cdn.jsdelivr.net"];   // 지도 라이브러리·글꼴(무결성 해시로 검증)
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}).then(() => self.skipWaiting()));
 });
