@@ -3,8 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- 보안 정책(CSP): 스크립트는 이 사이트와 지도 라이브러리(unpkg)만, 데이터 조회는 이 사이트만 허용 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data: blob: https:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- 외부 라이브러리는 버전 고정 + 무결성 해시(SRI): 파일이 바뀌면 브라우저가 실행을 거부 -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <title>동해시 의료기관 운영현황</title>
 <meta name="theme-color" content="#0b3a66">
 <link rel="manifest" href="manifest.webmanifest">
@@ -14,7 +18,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="동해시 의료기관">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" integrity="sha384-uR1wgObmx89ZQ4VVXHdzjbDJZ1PvBK01K+E3GebmaBKdZ87qRJvBWPoPbzWeEd5T" crossorigin="anonymous">
 <style>
 /* 상단 요약 → 탭(약국/병·의원/응급실) → 지도 + 목록 */
 :root{
@@ -500,7 +504,9 @@ const hpIcon=p=>/치과/.test(p.div)?"dt":/한의원|한방/.test(p.div)?"km":"h
 
 // ===== 공통 =====
 const $=s=>document.querySelector(s);
-const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// 링크·이미지 주소 검증: https 주소나 이 사이트 안의 파일만 허용(javascript: 등 차단)
+const safeUrl=u=>{u=String(u??"").trim();if(!u)return "";try{const x=new URL(u,location.href);return (x.protocol==="https:"||x.origin===location.origin)?x.href:""}catch(e){return ""}};
 const tok=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const toMin=s=>{s=String(s).padStart(4,"0");return +s.slice(0,2)*60+ +s.slice(2)};
 const fmt=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")};
@@ -511,7 +517,7 @@ function span(p,k){const t=p.t&&p.t[k];if(!t||!t[0]||!t[1])return null;let o=toM
 // ===== 당번·임시휴무 (duty.json, GitHub에서 직접 편집) =====
 let OV=[],NOTES=[];
 let ERC=[];const erT=v=>new Date(String(v).replace(" ","T")+":00+09:00").getTime();
-const erFmt=v=>{const d=new Date(erT(v)+9*3600e3);return (d.getUTCMonth()+1)+"/"+d.getUTCDate()+"("+"일월화수목금토"[d.getUTCDay()]+") "+String(v).slice(11)};
+const erFmt=v=>{const d=new Date(erT(v)+9*3600e3);if(isNaN(d))return "";return (d.getUTCMonth()+1)+"/"+d.getUTCDate()+"("+"일월화수목금토"[d.getUTCDay()]+") "+esc(String(v).slice(11,16))};
 function erClosed(p){const t=now().getTime();return ERC.find(c=>c&&c.name===p.name&&erT(c.from)<=t&&t<erT(c.to))||null}
 function erStopHtml(p){const t=now().getTime(),c=erClosed(p),up=ERC.filter(x=>x&&x.name===p.name&&erT(x.from)>t&&erT(x.from)-t<45*864e5).sort((a,b)=>erT(a.from)-erT(b.from));
   let h="";if(c)h+=`<div class="caution stop"><b>⛔ 응급실 운영 중단 중</b> ${erFmt(c.from)} ~ ${erFmt(c.to)} · 다른 응급실을 이용하세요</div>`;
@@ -575,7 +581,7 @@ function newsUrl(n){return n.no?"https://www.dh.go.kr/health/selectBbsNttView.do
 function showNews(){if(!NEWS.length)return;const n=NEWS[newsI%NEWS.length];newsI++;$("#hn-t").textContent=n.title+(n.date?" ("+n.date.slice(5).replace("-","/")+")":"");$("#hnews").href=newsUrl(n);
   $("#hn-new").hidden=!(n.date&&(Date.now()-new Date(n.date+"T00:00:00+09:00").getTime())<3*864e5)}
 async function loadNews(){try{const r=await fetch("notice.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();NEWS=(j.items||[]).slice(0,5);newsI=0;showNews()}}catch(e){}}
-let SHORT=[];const ymdK=v=>v&&v.length===8?v.slice(0,4)+"."+(+v.slice(4,6))+"."+(+v.slice(6)):"";
+let SHORT=[];const ymdK=v=>/^\d{8}$/.test(v||"")?v.slice(0,4)+"."+(+v.slice(4,6))+"."+(+v.slice(6)):"";
 async function loadShort(){try{const r=await fetch("shortage.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();SHORT=Array.isArray(j.items)?j.items:[];
   $("#short-s").textContent=`💊 공급 부족 의약품(식약처) ${SHORT.length}건 — 눌러서 보기`;
   $("#short-l").innerHTML=SHORT.map(x=>`<div class="short-i"><b>${esc(x.item)}</b><div class="m">${esc(x.entp)} · 부족 예상 ${ymdK(x.short)||"-"} · 정상화 예정 ${ymdK(x.plan)||"미정"}</div>${x.alt?`<div class="a">대체·영향: ${esc(x.alt.replace(/\s+/g," ").slice(0,140))}${x.alt.length>140?"…":""}</div>`:""}</div>`).join("")+(j.updated?`<div class="short-note">식약처 의약품공급부족 정보 · ${esc(j.updated)} 갱신</div>`:"")}catch(e){}}
@@ -660,8 +666,8 @@ function render(){fixLoc();
   const noT=isER||isAED;
   $("#dong").hidden=noT;$("#hol").parentElement.hidden=noT;$("#sim").parentElement.hidden=noT;$("#now").hidden=noT;$("#late").hidden=noT;$("#sun").hidden=noT;
   $("#near").setAttribute("aria-pressed",near);$("#late").setAttribute("aria-pressed",late);$("#sun").setAttribute("aria-pressed",sun);
-  $("#div").hidden=true;$("#birthf").hidden=!(tab==="er"||tab==="hp"&&BIRTH.length);$("#birthf").setAttribute("aria-pressed",birthOn);$("#kinds").hidden=tab!=="hp";$("#kinds").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.kind===hpKind);const n=b.dataset.kind?rowsOf("hp",d).filter(r=>kindOf(r.p,b.dataset.kind)).length:rowsOf("hp",d).length;b.innerHTML=b.textContent.replace(/\s*\d+$/,"")+` <span class="n">${n}</span>`});$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
-    const fn=$("#flunote");fn.hidden=!(tab==="hp"&&fluOn&&fa);if(!fn.hidden)fn.innerHTML=`<b>💉 ${esc(FLU.title||"독감 무료 예방접종")}</b><br>${esc(FLU.text||"")}${FLU.image?` <a href="${esc(FLU.image)}" target="_blank" rel="noopener">안내문 보기 ↗</a>`:""}`}
+  $("#div").hidden=true;$("#birthf").hidden=!(tab==="er"||tab==="hp"&&BIRTH.length);$("#birthf").setAttribute("aria-pressed",birthOn);$("#kinds").hidden=tab!=="hp";$("#kinds").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.kind===hpKind);const n=b.dataset.kind?rowsOf("hp",d).filter(r=>kindOf(r.p,b.dataset.kind)).length:rowsOf("hp",d).length;b.innerHTML=esc(b.textContent.replace(/\s*\d+$/,""))+` <span class="n">${Number(n)||0}</span>`});$("#dept").hidden=tab!=="hp";$("#kids").hidden=tab!=="hp";{const fa=!!(FLU&&FLU.items&&FLU.items.some(x=>fluInfo(x)));$("#flu").hidden=tab!=="hp"||!fa;$("#flu").setAttribute("aria-pressed",fluOn);
+    const fn=$("#flunote");fn.hidden=!(tab==="hp"&&fluOn&&fa);if(!fn.hidden)fn.innerHTML=`<b>💉 ${esc(FLU.title||"독감 무료 예방접종")}</b><br>${esc(FLU.text||"")}${safeUrl(FLU.image)?` <a href="${esc(safeUrl(FLU.image))}" target="_blank" rel="noopener">안내문 보기 ↗</a>`:""}`}
   $("#kidnote").hidden=tab!=="er";$("#short").hidden=tab!=="ph"||!SHORT.length;$("#otcbox").hidden=true;$("#otcnote").hidden=tab!=="otc";
   $("#kids").setAttribute("aria-pressed",$("#dept").value==="소아청소년과"&&filter==="open");
   const dsel=$("#dong"),dcur=dsel.value,dongs=[...new Set(DATA[tab].map(p=>dongOf(p.addr)))].sort();
@@ -727,8 +733,8 @@ function aedRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel"
 function otcRow(r){const p=r.p;return `<article class="row${p._k===selKey?" sel":""}" data-k="${p._k}" style="--c:var(--c-otc)">
     <div class="name">${IC.ph}${esc(p.name)} <span class="tag">상비약 판매</span></div>
     <div class="meta">${distTag(p)}<span>${esc(p.addr)}</span>${p.tel?`<button class="tel" data-tel="${esc(p.tel)}" title="번호 복사">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도 ↗</a></div></article>`}
-function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${b.hv28}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
-function erNum(v){if(v==null)return "–";return v<0?`0`:String(v)}
+function kidTag(b){return b.hv28!=null&&b.hv28>0?`<span class="kid">소아 응급 가능 ${erNum(b.hv28)}</span>`:b.hv28!=null?`<span class="kid no">소아 병상 없음</span>`:`<span class="kid no">소아 전용병상 정보 없음</span>`}
+function erNum(v){const n=Number(v);if(v==null||v===""||!Number.isFinite(n))return "–";return n<0?`0`:String(Math.trunc(n))}
 // 중증 응급질환 수용 가능(병원 입력, 국립중앙의료원)
 let SRS={},SRS_T="";
 const SRS_N={1:"심근경색 재관류",2:"뇌경색 재관류",3:"거미막하출혈 수술",4:"뇌출혈 수술",5:"흉부 대동맥",6:"복부 대동맥",7:"담낭질환",8:"담도질환",9:"복부 응급수술",
@@ -756,7 +762,7 @@ function erRow(r){
   return `<article class="row${h._k===selKey?" sel":""}" data-k="${h._k}" style="--c:${col}">
     <div class="name">${IC.er}${esc(h.name)} ${kidTag(b)}${birthTag(h)}<span class="tag">${esc(h.city||"")}</span>${h.far?`<span class="tag">원거리 이송</span>`:""}${h.cls?`<span class="tag">${esc(h.cls)}</span>`:""}</div>
     <div class="beds">
-      <div class="bed big"><span class="v">${erNum(b.hvec)}${b.hvs01!=null?` <small>/ ${b.hvs01}</small>`:""}</span><span class="k">응급실 가용</span></div>
+      <div class="bed big"><span class="v">${erNum(b.hvec)}${b.hvs01!=null?` <small>/ ${erNum(b.hvs01)}</small>`:""}</span><span class="k">응급실 가용</span></div>
       <div class="bed"><span class="v">${erNum(b.hvicc)}</span><span class="k">중환자실</span></div>
       <div class="bed"><span class="v">${erNum(b.hvgc)}</span><span class="k">입원실</span></div>
       <div class="bed"><span class="v">${erNum(b.hvoc)}</span><span class="k">수술실</span></div>
@@ -774,7 +780,7 @@ function showInfo(d){
   if(r.t==="otc"){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">상비약 판매 편의점</span></div><div>해열진통제·감기약·소화제·파스 등 · 영업시간은 업소별 상이</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${distTag(p)}${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="aed"){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">AED</span></div>${p.place?`<div>설치 위치: ${esc(p.place)}</div>`:""}<div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${distTag(p)}${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   if(r.t==="er"&&p.nort){box.innerHTML=`<div class="nm">${esc(p.name)} <span class="tag">${esc(p.cls||"")}</span></div>${noteFor(p)}<div>실시간 병상 정보 미제공 · 운영 여부는 전화로 확인하세요</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
-  if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+b.hvs01:""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
+  if(r.t==="er"){const b=p.b||{};box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[r.s.st]}">응급실 가용 ${erNum(b.hvec)}${b.hvs01!=null?" / "+erNum(b.hvs01):""}</span></div>${noteFor(p)}<div>${kidTag(b)}</div><div>중환자실 ${erNum(b.hvicc)} · 입원실 ${erNum(b.hvgc)} · 수술실 ${erNum(b.hvoc)}${b.hvncc!=null?" · 신생아중환자실 "+erNum(b.hvncc):""} · 입력 ${esc(erTime(b.hvidate))}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;return}
   const s=r.s,ht=s.today?`${DAYN[s.k]} `+((s.all&&s.all.length)?s.all:[s.today]).map(([o,c])=>(o===0&&c>=1440)?"24시간":`${fmt(o)}–${fmt(c)}`).join(" · ")+(s.fx?(s.bo?" (보건소 안내 기준)":" (최근 확인 기준)"):""):"오늘 휴무/미등록";
   box.innerHTML=`<div class="nm">${esc(p.name)} <span class="pill" style="--c:${COL[s.st]}">${LAB[r.t][s.st]}</span>${p.div?`<span class="tag">${esc(p.div)}</span>`:""}${r.t==="hp"?fluTag(p):""}</div>${noteFor(p)}<div>${esc(ht)}${p.inf?" · "+esc(p.inf):""}</div><div style="color:var(--muted)">${esc(p.addr)}</div><div class="meta">${p.tel?`<button class="tel" data-tel="${esc(p.tel)}">${esc(p.tel)}</button>`:""}<a class="nlink" href="${naver(p)}" target="_blank" rel="noopener">네이버 지도에서 보기 ↗</a></div>`;
 }
@@ -842,7 +848,7 @@ function setTab(t){tab=t;syncLayers(t);filter="all";selKey=null;fitted=false;doc
 const isPedSpec=p=>/소아/.test(p.name)||((p.d||[]).length===1&&p.d[0]==="소아청소년과");
 function nearRows(t,pred,n){return rowsOf(t,now()).filter(r=>r.p.lat&&pred(r)).map(r=>({r,m:distM(r.p)})).sort((a,b)=>(a.m??1e12)-(b.m??1e12)).slice(0,n||1)}
 function qCard(label,x,ovr,note){const r=x.r,p=r.p,t=r.t;let st;
-  if(ovr)st=ovr;else if(t==="er"){const b=p.b||{};st=(p.nort?"실시간 병상 정보 없음 · 전화 확인":`응급실 병상 ${erNum(b.hvec)}`+(b.hv28>0?` · 소아 ${b.hv28}`:""))+(birthOk(p)?" · 🤰 분만 가능":"")}
+  if(ovr)st=ovr;else if(t==="er"){const b=p.b||{};st=(p.nort?"실시간 병상 정보 없음 · 전화 확인":`응급실 병상 ${erNum(b.hvec)}`+(b.hv28>0?` · 소아 ${erNum(b.hv28)}`:""))+(birthOk(p)?" · 🤰 분만 가능":"")}
   else st=LAB[t][r.s.st]+(r.s.open?` · ${fmt(r.s.open[1])}까지`:"");
   const tel=(p.tel||"").replace(/[^0-9]/g,"");
   return `<div class="q-card" style="--c:var(--c-${t})"><div class="q-k">${label}</div><div class="q-n">${esc(p.name)}</div>
@@ -960,7 +966,8 @@ async function showPopup(){if(popShown||document.body.classList.contains("board"
   const p=(Array.isArray(j.popups)?j.popups:[]).find(p=>{if(!p||!p.image||(p.from&&today<p.from)||(p.to&&today>p.to))return false;
     let h=null;try{h=localStorage.getItem("popHide:"+(p.id||p.image))}catch(e){}return h!==today});
   if(!p)return;popShown=true;
-  const box=$("#pop");$("#pop-i").src=p.image;$("#pop-i").alt=p.title||"알림";$("#pop-a").href=p.link||p.image;box.setAttribute("aria-label",p.title||"알림");box.hidden=false;
+  const img=safeUrl(p.image),lnk=safeUrl(p.link)||img;if(!img)return;
+  const box=$("#pop");$("#pop-i").src=img;$("#pop-i").alt=p.title||"알림";$("#pop-a").href=lnk;box.setAttribute("aria-label",p.title||"알림");box.hidden=false;
   const close=()=>{box.hidden=true};
   $("#pop-close").onclick=close;box.onclick=e=>{if(e.target===box)close()};
   $("#pop-today").onclick=()=>{try{localStorage.setItem("popHide:"+(p.id||p.image),today)}catch(e){}close()};

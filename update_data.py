@@ -19,7 +19,8 @@ import sys
 import tempfile
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
+# [보안 검토] parse_xml() 에서 DTD/ENTITY 차단 후에만 사용
+import xml.etree.ElementTree as ET  # nosec B405
 from datetime import datetime, timedelta, timezone
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -42,6 +43,11 @@ ER_LIST = API + "ErmctInfoInqireService/getEgytListInfoInqire"
 ER_SRS = API + "ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire"   # 중증질환자 수용가능 정보(같은 응급의료정보 서비스)
 AED = API + "AEDInfoInqireService/getEgytAedManageInfoInqire"   # 활용신청: 국립중앙의료원_전국 자동심장충격기(AED) 정보 조회 서비스
 HIST_KEEP = 36   # 응급실 병상 추이 보관 개수(10분 간격 × 36 = 6시간)
+
+# ── 보안 설정(시큐어코딩) ──
+ALLOWED_HOSTS = {"apis.data.go.kr", "www.dh.go.kr"}   # 접속 허용 주소(그 밖의 주소·file: 등은 거부)
+MAX_BYTES = 20 * 1024 * 1024                          # 응답 최대 크기(20MB): 비정상 대용량 응답 차단
+MAX_PAGES = 200                                       # 페이지 반복 상한: 끝나지 않는 반복 방지
 
 # 진료과목 코드 (병·의원 찾기 서비스 QD 파라미터)
 DEPTS = [("D001", "내과"), ("D002", "소아청소년과"), ("D003", "신경과"), ("D004", "정신건강의학과"),
@@ -66,10 +72,36 @@ def key():
 KEY = key()
 
 
+def check_url(url):
+    """https 이면서 허용된 주소만 접속(경로 조작·신뢰되지 않은 주소 접속 방지)"""
+    u = urllib.parse.urlparse(url)
+    if u.scheme != "https" or u.hostname not in ALLOWED_HOSTS:
+        raise ValueError(f"허용되지 않은 주소: {u.scheme}://{u.hostname}")
+    return url
+
+
+def read_limited(r):
+    data = r.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES:
+        raise ValueError("응답이 너무 큼(20MB 초과)")
+    return data
+
+
+def parse_xml(data):
+    """외부 XML 안전 파싱: DTD·엔티티 선언이 있으면 거부(XXE·엔티티 폭탄 방지, 공공 API 응답에는 쓰이지 않음)"""
+    head = data[:4096].upper()
+    if b"<!DOCTYPE" in head or b"<!ENTITY" in data.upper():
+        raise ValueError("허용되지 않는 XML(DTD/ENTITY 포함)")
+    # [보안 검토] 위에서 DTD/ENTITY 차단 후 파싱
+    return ET.fromstring(data)  # nosec B314
+
+
 def call(url, params):
     q = urllib.parse.urlencode(params)
-    with urllib.request.urlopen(f"{url}?serviceKey={KEY}&{q}", timeout=40) as r:
-        root = ET.fromstring(r.read())
+    full = check_url(f"{url}?serviceKey={KEY}&{q}")
+    # [보안 검토] check_url 로 https·허용 주소만 통과
+    with urllib.request.urlopen(full, timeout=40) as r:  # nosec B310
+        root = parse_xml(read_limited(r))
     code = (root.findtext(".//resultCode") or "").strip()
     if code and code != "00":
         raise RuntimeError(f"API 오류 {code}: {root.findtext('.//resultMsg')}")
@@ -86,6 +118,8 @@ def call_all(url, params, rows=100):
         if not got or len(items) >= total:
             break
         page += 1
+        if page > MAX_PAGES:
+            raise RuntimeError(f"페이지 수 상한({MAX_PAGES}) 초과 — 응답 이상으로 중단")
     if total and len(items) != total:
         raise RuntimeError(f"건수 불일치 totalCount={total}, 수신={len(items)}")
     return items
@@ -111,11 +145,13 @@ def stamp():
 
 
 def coord(i, p):
+    """좌표는 숫자이고 국내 범위일 때만 저장(잘못된 값 검증)"""
     try:
-        p["lat"] = round(float(i["wgs84Lat"]), 6)
-        p["lon"] = round(float(i["wgs84Lon"]), 6)
-    except (KeyError, ValueError):
-        pass
+        lat, lon = float(i["wgs84Lat"]), float(i["wgs84Lon"])
+    except (KeyError, ValueError, TypeError):
+        return p
+    if 33 <= lat <= 39 and 124 <= lon <= 132:
+        p["lat"], p["lon"] = round(lat, 6), round(lon, 6)
     return p
 
 
@@ -123,7 +159,7 @@ def hours(i):
     t = {}
     for k in range(1, 9):
         s, c = i.get(f"dutyTime{k}s"), i.get(f"dutyTime{k}c")
-        if s and c:
+        if s and c and s.isdigit() and c.isdigit() and len(s) <= 4 and len(c) <= 4:   # 시각은 숫자 4자리만
             t[str(k)] = [s.zfill(4), c.zfill(4)]
     return t
 
@@ -323,15 +359,21 @@ def update_notice():
             last = datetime.strptime(old["checked"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
             if NOW - last < timedelta(minutes=55):
                 return
-        except Exception:
-            pass
-    ctx = ssl.create_default_context()
-    try:
-        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")   # 구형 암호화 방식을 쓰는 관공서 서버 대응(인증서 검증은 유지)
-    except Exception:
-        pass
-    req = urllib.request.Request(NOTICE_URL, headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "ko"})
-    raw = urllib.request.urlopen(req, timeout=20, context=ctx).read()
+        except (KeyError, ValueError, OSError) as e:
+            log(f"새소식 이전 기록 읽기 실패(새로 받음): {e}")
+    req = urllib.request.Request(check_url(NOTICE_URL), headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "ko"})
+    try:   # 기본(안전한) 암호화 설정으로 먼저 접속
+        # [보안 검토] check_url 통과
+        with urllib.request.urlopen(req, timeout=20, context=ssl.create_default_context()) as r:  # nosec B310
+            raw = read_limited(r)
+    except ssl.SSLError as e:
+        # 보건소 서버가 구형 암호화만 지원할 때만 보안수준을 한 단계 낮춰 재시도(인증서 검증은 그대로 유지, 공개 게시판 읽기 전용)
+        log(f"보건소 게시판 기본 TLS 실패, 호환 모드로 재시도: {e}")
+        ctx = ssl.create_default_context()
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+        # [보안 검토] check_url 통과
+        with urllib.request.urlopen(req, timeout=20, context=ctx) as r:  # nosec B310
+            raw = read_limited(r)
     try:
         page = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -371,8 +413,8 @@ def update_shortage():
             last = datetime.strptime(old["updated"], "%Y-%m-%d %H:%M").replace(tzinfo=KST)
             if NOW - last < timedelta(hours=6):
                 return
-        except Exception:
-            pass
+        except ValueError as e:
+            log(f"공급부족 이전 기록 시각 형식 오류(새로 받음): {e}")
     ops = ([old["op"]] if old.get("op") else []) + [o for o in SHORT_OPS if o != old.get("op")]
     errs = []
     for op in ops:
