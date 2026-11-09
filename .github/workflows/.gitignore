@@ -1,0 +1,6 @@
+# 인증키 등 비밀 정보는 저장소에 올리지 않음
+service_key.txt
+*.key
+.env
+*.tmp
+__pycache__/
